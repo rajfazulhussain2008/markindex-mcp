@@ -33,25 +33,21 @@ def get_adjacent_sections(doc_id: str, section_title: str) -> str:
         section_title: Title of the section to navigate from.
 
     Returns:
-        JSON object with parent, previous, and next section titles.
+        Dict with current section info, parent, previous, and next.
     """
     try:
-        doc = _require_document(doc_id)
+        doc = documents.get(doc_id)
+        if not doc:
+            raise DocumentNotFoundError(doc_id)
     except DocumentNotFoundError as exc:
-        return str(exc)
+        return {"status": "error", "message": str(exc)}
 
-    tree = doc["tree"]
-    section_node = find_section(tree, section_title)
-    if not section_node:
-        return f"Error: Section '{section_title}' not found."
+    nav_map = get_flat_navigation_map(doc["tree"])
 
-    nav_map = get_flat_navigation_map(tree)
-    resolved = section_node["title"]
+    if section_title not in nav_map:
+        return {"status": "error", "message": f"Section '{section_title}' not found."}
 
-    if resolved not in nav_map:
-        return f"Error: Navigation mapping failed for '{resolved}'."
-
-    return json.dumps(nav_map[resolved], indent=2)
+    return nav_map[section_title]
 
 
 @mcp.tool()

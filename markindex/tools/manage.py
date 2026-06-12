@@ -16,23 +16,25 @@ logger = get_logger(__name__)
 
 
 @mcp.tool()
-def list_documents() -> str:
+def list_documents() -> list[dict]:
     """List all ingested documents currently available in the index.
 
     Returns:
-        JSON array of document metadata objects.
+        List of document metadata dictionaries.
     """
-    doc_list = [
-        {
-            "document_id": doc_id,
-            "filename": doc.get("filename", "Unknown"),
-            "filepath": doc.get("filepath", "Unknown"),
-            "ingested_at": doc.get("ingested_at", "Unknown"),
-            "size_chars": doc.get("size_chars", 0),
-        }
-        for doc_id, doc in documents.items()
-    ]
-    return json.dumps(doc_list, indent=2)
+    result: list[dict] = []
+    for doc_id, doc in documents.items():
+        result.append({
+            "id": doc_id,
+            "filename": doc.get("filename"),
+            "filepath": doc.get("filepath"),
+            "ingested_at": doc.get("ingested_at"),
+            "size_chars": doc.get("size_chars"),
+            "sections_count": len(doc.get("tree", [])),
+        })
+
+    logger.debug("list_documents returned %d items", len(result))
+    return result
 
 
 @mcp.tool()
@@ -78,11 +80,18 @@ def save_to_outputs(filename: str, content: str) -> str:
     if not filename.endswith(".md") and not filename.endswith(".txt"):
         filename += ".md"
         
+    if os.path.basename(filename) != filename:
+        return "Error: Invalid filename path traversal detected."
+
     safe_filename = "".join(c for c in filename if c.isalnum() or c in " ._-").strip()
     if not safe_filename:
         safe_filename = "unnamed_output.md"
         
-    out_path = os.path.join(settings.OUTPUTS_DIR, safe_filename)
+    out_path = os.path.abspath(os.path.join(settings.OUTPUTS_DIR, safe_filename))
+    outputs_dir_abs = os.path.abspath(settings.OUTPUTS_DIR)
+    
+    if not out_path.startswith(outputs_dir_abs):
+        return "Error: Invalid filename path traversal detected."
     
     try:
         with open(out_path, "w", encoding="utf-8") as f:

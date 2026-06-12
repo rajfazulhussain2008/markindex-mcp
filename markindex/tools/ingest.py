@@ -32,7 +32,7 @@ def ingest_document(filepath: str) -> str:
         filepath: Local file path or URL (http/https) to the document.
 
     Returns:
-        A confirmation message containing the new document ID.
+        A dictionary with status and the new document ID.
     """
     is_url = filepath.startswith(("http://", "https://"))
     actual_filepath = filepath
@@ -69,11 +69,11 @@ def ingest_document(filepath: str) -> str:
         }, markdown_text)
 
         logger.info("Ingested document '%s' as %s", filename, doc_id)
-        return f"Successfully ingested document. Document ID: {doc_id}"
+        return {"status": "success", "document_id": doc_id, "message": "Successfully ingested document."}
 
     except Exception as exc:
         logger.error("Ingestion failed for '%s': %s", filepath, exc)
-        return f"Error ingesting document: {exc}"
+        return {"status": "error", "message": f"Error ingesting document: {exc}"}
     finally:
         if temp_file and os.path.exists(temp_file):
             try:
@@ -91,7 +91,7 @@ def ingest_text(title: str, text: str) -> str:
         text: The raw text or markdown content.
 
     Returns:
-        A confirmation message containing the new document ID.
+        A dictionary with status and the new document ID.
     """
     try:
         doc_id = str(uuid.uuid4())
@@ -115,11 +115,11 @@ def ingest_text(title: str, text: str) -> str:
         }, text)
 
         logger.info("Ingested text document '%s' as %s", title, doc_id)
-        return f"Successfully ingested text document. Document ID: {doc_id}"
+        return {"status": "success", "document_id": doc_id, "message": "Successfully ingested text document."}
 
     except Exception as exc:
         logger.error("Text ingestion failed: %s", exc)
-        return f"Error ingesting text: {exc}"
+        return {"status": "error", "message": f"Error ingesting text: {exc}"}
 
 
 @mcp.tool()
@@ -134,11 +134,11 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> str:
         interval_seconds: Time-chunk size in seconds (default 120).
 
     Returns:
-        A confirmation message containing the new document ID.
+        A dictionary with status and the new document ID.
     """
     video_id = _extract_youtube_id(url_or_id)
     if not video_id:
-        return "Error: Could not extract valid YouTube video ID."
+        return {"status": "error", "message": "Could not extract valid YouTube video ID."}
 
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
@@ -170,11 +170,11 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> str:
         }, markdown_text)
 
         logger.info("Ingested YouTube '%s' (%s) as %s", video_title, video_id, doc_id)
-        return f"Successfully ingested YouTube transcript. Document ID: {doc_id}"
+        return {"status": "success", "document_id": doc_id, "message": "Successfully ingested YouTube transcript."}
 
     except Exception as exc:
         logger.error("YouTube ingestion failed for '%s': %s", url_or_id, exc)
-        return f"Error fetching or parsing YouTube transcript: {exc}"
+        return {"status": "error", "message": f"Error fetching or parsing YouTube transcript: {exc}"}
 
 
 @mcp.tool()
@@ -187,14 +187,12 @@ def ingest_directory(directory_path: str) -> str:
         directory_path: Absolute path to the target directory.
 
     Returns:
-        JSON summary of ingestion results.
+        A dictionary summarizing the ingestion results.
     """
-    import json
-
     if not os.path.exists(directory_path):
-        return f"Error: Directory not found at {directory_path}"
+        return {"status": "error", "message": f"Directory not found at {directory_path}"}
     if not os.path.isdir(directory_path):
-        return f"Error: Path {directory_path} is not a directory."
+        return {"status": "error", "message": f"Path {directory_path} is not a directory."}
 
     ingested: list[dict] = []
     failed: list[dict] = []
@@ -207,20 +205,21 @@ def ingest_directory(directory_path: str) -> str:
             continue
 
         res = ingest_document(entry.path)
-        if "Successfully ingested document" in res:
-            doc_id = res.split("Document ID: ")[1].strip()
+        if isinstance(res, dict) and res.get("status") == "success":
+            doc_id = res.get("document_id", "unknown")
             ingested.append({"filename": entry.name, "filepath": entry.path, "document_id": doc_id})
         else:
-            failed.append({"filename": entry.name, "error": res})
+            failed.append({"filename": entry.name, "error": str(res)})
 
     logger.info("Directory ingestion: %d succeeded, %d failed in %s", len(ingested), len(failed), directory_path)
-    return json.dumps({
+    return {
+        "status": "success",
         "directory_path": directory_path,
         "successfully_ingested": ingested,
         "failed_ingested": failed,
         "total_success": len(ingested),
         "total_failed": len(failed),
-    }, indent=2)
+    }
 
 
 # ── Private Helpers ────────────────────────────────────────────────
@@ -228,8 +227,17 @@ def ingest_directory(directory_path: str) -> str:
 def _download_url(url: str) -> tuple[str, str]:
     """Download a URL to a temporary file."""
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req) as response:
-        content = response.read()
+    max_size = 50 * 1024 * 1024  # 50 MB
+    content = bytearray()
+    
+    with urllib.request.urlopen(req, timeout=15) as response:
+        while True:
+            chunk = response.read(8192)
+            if not chunk:
+                break
+            content.extend(chunk)
+            if len(content) > max_size:
+                raise ValueError("Download exceeded maximum allowed size (50MB).")
 
     suffix = ".html"
     last_part = url.split("/")[-1]

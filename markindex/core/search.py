@@ -90,6 +90,11 @@ def rank_sections_tfidf(
     for node, path, title_matched, content_matched in filtered:
         tokens = tokenize(f"{node['title']} {node['content']}")
         score = 5.0 if title_matched else 0.0
+        
+        if not is_regex and len(query_terms) > 1:
+            if query_lower in f"{node['title']} {node['content']}".lower():
+                score += 15.0
+
         for term in query_terms:
             tf = tokens.count(term)
             if tf > 0:

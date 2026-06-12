@@ -36,14 +36,14 @@ def get_document_outline(doc_id: str) -> str:
         doc_id: The document ID returned by an ingestion tool.
 
     Returns:
-        JSON-formatted hierarchical outline with section titles and sizes.
+        Hierarchical outline with section titles and sizes as a list of dicts.
     """
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return str(exc)
+        return {"status": "error", "message": str(exc)}
 
-    return json.dumps(get_outline(doc["tree"]), indent=2)
+    return get_outline(doc["tree"])
 
 
 @mcp.tool()
@@ -111,16 +111,16 @@ def search_sections(doc_id: str, query: str, is_regex: bool = False) -> str:
         is_regex: If True, treat query as a regex pattern.
 
     Returns:
-        JSON array of matching sections sorted by relevance.
+        List of matching sections sorted by relevance.
     """
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return str(exc)
+        return [{"status": "error", "message": str(exc)}]
 
     matches = rank_sections_tfidf(doc["tree"], query, is_regex)
     logger.info("Search '%s' in %s returned %d results", query, doc_id[:8], len(matches))
-    return json.dumps(matches, indent=2)
+    return matches
 
 
 def _section_not_found_message(tree: list[dict], section_title: str) -> str:

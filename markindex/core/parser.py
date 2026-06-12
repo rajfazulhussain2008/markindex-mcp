@@ -186,30 +186,34 @@ def find_section(tree: list[dict], target_title: str) -> dict | None:
     """
     target = target_title.lower().strip()
 
-    # Phase 1 — exact
-    def _exact(nodes: list[dict]) -> dict | None:
+    # Phase 1 — exact title or exact path
+    def _exact(nodes: list[dict], current_path: list[str]) -> dict | None:
         for node in nodes:
-            if node["title"].lower().strip() == target:
+            node_path = current_path + [node["title"]]
+            full_path_str = " > ".join(node_path).lower().strip()
+            if node["title"].lower().strip() == target or full_path_str == target:
                 return node
-            found = _exact(node["children"])
+            found = _exact(node["children"], node_path)
             if found:
                 return found
         return None
 
-    # Phase 2 — substring
-    def _substring(nodes: list[dict]) -> dict | None:
+    # Phase 2 — substring title or path
+    def _substring(nodes: list[dict], current_path: list[str]) -> dict | None:
         for node in nodes:
-            if target in node["title"].lower().strip():
+            node_path = current_path + [node["title"]]
+            full_path_str = " > ".join(node_path).lower().strip()
+            if target in node["title"].lower().strip() or target in full_path_str:
                 return node
-            found = _substring(node["children"])
+            found = _substring(node["children"], node_path)
             if found:
                 return found
         return None
 
-    result = _exact(tree)
+    result = _exact(tree, [])
     if result:
         return result
-    result = _substring(tree)
+    result = _substring(tree, [])
     if result:
         return result
 
@@ -253,28 +257,30 @@ def get_flat_navigation_map(tree: list[dict]) -> dict[str, dict[str, Any]]:
         Dict mapping each section title to its ``parent``, ``previous``,
         and ``next`` sibling titles (or ``None`` at boundaries).
     """
-    flat_list: list[dict] = []
+    flat_list: list[tuple[dict, str]] = []
     parent_map: dict[str, str] = {}
 
     def _traverse(
         nodes: list[dict],
-        parent_title: str | None = None,
+        current_path: list[str]
     ) -> None:
         for node in nodes:
-            flat_list.append(node)
-            if parent_title:
-                parent_map[node["title"]] = parent_title
-            _traverse(node["children"], node["title"])
+            node_path = current_path + [node["title"]]
+            full_path = " > ".join(node_path)
+            flat_list.append((node, full_path))
+            if current_path:
+                parent_map[full_path] = " > ".join(current_path)
+            _traverse(node["children"], node_path)
 
-    _traverse(tree)
+    _traverse(tree, [])
 
     nav_map: dict[str, dict[str, Any]] = {}
-    for i, node in enumerate(flat_list):
-        title = node["title"]
-        nav_map[title] = {
-            "title": title,
-            "parent": parent_map.get(title),
-            "previous": flat_list[i - 1]["title"] if i > 0 else None,
-            "next": flat_list[i + 1]["title"] if i < len(flat_list) - 1 else None,
+    for i, (node, full_path) in enumerate(flat_list):
+        nav_map[full_path] = {
+            "title": node["title"],
+            "path": full_path,
+            "parent": parent_map.get(full_path),
+            "previous": flat_list[i - 1][1] if i > 0 else None,
+            "next": flat_list[i + 1][1] if i < len(flat_list) - 1 else None,
         }
     return nav_map

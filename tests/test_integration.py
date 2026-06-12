@@ -140,14 +140,14 @@ class TestNavigation(unittest.TestCase):
 
     def test_nav_map_keys(self):
         self.assertIn("Introduction", self.nav)
-        self.assertIn("Background", self.nav)
+        self.assertIn("Introduction > Background", self.nav)
         self.assertIn("Conclusion", self.nav)
 
     def test_sibling_links(self):
-        bg = self.nav["Background"]
+        bg = self.nav["Introduction > Background"]
         self.assertEqual(bg["parent"], "Introduction")
         self.assertEqual(bg["previous"], "Introduction")
-        self.assertEqual(bg["next"], "Objectives")
+        self.assertEqual(bg["next"], "Introduction > Objectives")
 
     def test_first_section_has_no_previous(self):
         intro = self.nav["Introduction"]
@@ -174,6 +174,12 @@ class TestSearch(unittest.TestCase):
         top = results[0]
         self.assertTrue(top["title_matched"])
         self.assertGreater(top["score"], 5.0)
+
+    def test_exact_phrase_boost(self):
+        results = rank_sections_tfidf(self.tree, "significant improvement in performance")
+        top = results[0]
+        self.assertEqual(top["section_title"], "Key Findings")
+        self.assertGreater(top["score"], 15.0)
 
     def test_no_results(self):
         results = rank_sections_tfidf(self.tree, "xyznonexistent123")
@@ -228,6 +234,20 @@ class TestStorage(unittest.TestCase):
         meta, md = parse_frontmatter(content)
         self.assertEqual(meta, {})
         self.assertEqual(md, content)
+
+
+class TestManageSecurity(unittest.TestCase):
+    """Test security constraints in management tools."""
+
+    def test_save_to_outputs_path_traversal(self):
+        from markindex.tools.manage import save_to_outputs
+        res = save_to_outputs("../../../windows/system32/hack.md", "hacked")
+        self.assertIn("Error: Invalid filename path traversal detected", res)
+
+    def test_save_to_outputs_valid(self):
+        from markindex.tools.manage import save_to_outputs
+        res = save_to_outputs("valid_report.md", "content")
+        self.assertIn("Successfully saved", res)
 
 
 if __name__ == "__main__":
