@@ -47,7 +47,18 @@ def ingest_document(filepath: str) -> ToolResponse:
             if not settings.ALLOW_EXTERNAL_FILES:
                 raw_dir_abs = os.path.realpath(settings.RAW_DIR)
                 if os.path.commonpath([actual_filepath, raw_dir_abs]) != raw_dir_abs:
-                    return err("External file ingestion disabled. File must be inside RAW_DIR.", "ACCESS_DENIED")
+                    return err(
+                        "External file ingestion disabled. File must be inside RAW_DIR.",
+                        "ACCESS_DENIED"
+                    )
+
+            file_size = os.path.getsize(actual_filepath)
+            max_size_bytes = settings.MAX_FILE_MB * 1024 * 1024
+            if file_size > max_size_bytes:
+                return err(
+                    f"File too large: {file_size} bytes exceeds max {settings.MAX_FILE_MB}MB.",
+                    "FILE_TOO_LARGE"
+                )
 
         result = md_converter.convert(actual_filepath)
         markdown_text = result.text_content
@@ -221,7 +232,9 @@ def ingest_directory(dir_path: str) -> ToolResponse:
 
         res = ingest_document(entry.path)
         if res.get("success"):
-            results["ingested"].append({"filename": entry.name, "document_id": res["data"]["document_id"]})
+            results["ingested"].append(
+                {"filename": entry.name, "document_id": res["data"]["document_id"]}
+            )
         else:
             results["failed"].append({"file": entry.name, "error": res.get("error")})
 
@@ -258,7 +271,9 @@ def _download_url(url: str) -> tuple[str, str]:
                 break
             content.extend(chunk)
             if len(content) > max_size:
-                raise ValueError(f"Download exceeded maximum allowed size ({settings.MAX_FILE_MB}MB).")
+                raise ValueError(
+                    f"Download exceeded maximum allowed size ({settings.MAX_FILE_MB}MB)."
+                )
 
     # Sanitize suffix
     suffix = ""
@@ -326,7 +341,8 @@ def _format_transcript(
     for item in transcript:
         idx = int(item["start"] // interval_seconds)
         if idx > current_interval:
-            s, e = _ts(current_interval * interval_seconds), _ts((current_interval + 1) * interval_seconds)
+            s = _ts(current_interval * interval_seconds)
+            e = _ts((current_interval + 1) * interval_seconds)
             md_lines.append(f"## {s} - {e}\n")
             md_lines.append(" ".join(current_lines) + "\n")
             current_interval = idx
@@ -335,7 +351,8 @@ def _format_transcript(
             current_lines.append(item["text"])
 
     if current_lines:
-        s, e = _ts(current_interval * interval_seconds), _ts((current_interval + 1) * interval_seconds)
+        s = _ts(current_interval * interval_seconds)
+        e = _ts((current_interval + 1) * interval_seconds)
         md_lines.append(f"## {s} - {e}\n")
         md_lines.append(" ".join(current_lines) + "\n")
 

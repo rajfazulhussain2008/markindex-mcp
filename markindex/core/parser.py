@@ -69,7 +69,12 @@ def parse_markdown_to_tree(markdown_text: str) -> list[dict]:
 
     _join_content(root)
 
-    def _assign_ids(nodes: list[dict], current_path: list[str], seen_ids: dict[str, int], seen_paths: dict[str, int]) -> None:
+    def _assign_ids(
+        nodes: list[dict],
+        current_path: list[str],
+        seen_ids: dict[str, int],
+        seen_paths: dict[str, int],
+    ) -> None:
         for node in nodes:
             # Base ID
             node_path = current_path + [node["title"]]

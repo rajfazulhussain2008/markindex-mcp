@@ -111,9 +111,11 @@ def rank_sections_tfidf(
         count = 0
         for u, b in zip(corpus_unigrams, corpus_bigrams, strict=False):
             if " " in term:
-                if term in b: count += 1
+                if term in b:
+                    count += 1
             else:
-                if term in u: count += 1
+                if term in u:
+                    count += 1
         df[term] = count
 
     idf = {term: math.log((total_docs + 1) / (df.get(term, 0) + 1)) + 1 for term in query_terms}
@@ -131,7 +133,9 @@ def rank_sections_tfidf(
                 weight = 2.5 if " " in term else 1.0
                 score += tf * idf[term] * weight
 
-        snippets = _extract_snippets(node["content"], query_lower, rx, content_matched, query_unigrams_pre)
+        snippets = _extract_snippets(
+            node["content"], query_lower, rx, content_matched, query_unigrams_pre
+        )
 
         results.append({
             "section_title": node["title"],
@@ -178,7 +182,8 @@ def _extract_snippets(
         # Fallback to individual terms if exact phrase not found
         if not indices:
             for term in query_terms:
-                if len(term) < 3: continue  # Skip very short words like "in", "a"
+                if len(term) < 3:
+                    continue  # Skip very short words like "in", "a"
                 start_idx = 0
                 while True:
                     idx = content_lower.find(term, start_idx)

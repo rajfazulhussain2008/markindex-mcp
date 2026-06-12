@@ -14,7 +14,8 @@ from markindex.tools.query import get_document_outline, read_section, search_sec
 
 class TestEndToEndWorkflow(unittest.TestCase):
     def setUp(self):
-        # We need a clean state for the e2e test, we will patch WIKI_DIR so it doesn't touch real files.
+        # We need a clean state for the e2e test.
+        # We will patch WIKI_DIR so it doesn't touch real files.
         self.temp_dir = tempfile.TemporaryDirectory()
         self.patcher = patch("markindex.core.storage.settings.WIKI_DIR", self.temp_dir.name)
         self.patcher.start()

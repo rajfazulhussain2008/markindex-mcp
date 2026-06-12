@@ -29,7 +29,7 @@ Built on [Microsoft MarkItDown](https://github.com/microsoft/markitdown) for uni
 | 📖 **Paginated Reading** | Character-level pagination for reading large sections without overflow |
 | 🧭 **Tree Navigation** | Parent, previous, next sibling traversal for sequential reading |
 | 📝 **Extractive Summaries** | Term-frequency sentence scoring for quick section overviews |
-| 💾 **Persistent Cache** | Markdown files with YAML frontmatter — human-readable, git-friendly |
+| 💾 **Persistent Cache** | Markdown files with JSON frontmatter — human-readable, git-friendly |
 
 ---
 

@@ -103,7 +103,9 @@ def read_section(
 
 
 @mcp.tool()
-def search_sections(doc_id: str, query: str, is_regex: bool = False, limit: int | None = None) -> ToolResponse:
+def search_sections(
+    doc_id: str, query: str, is_regex: bool = False, limit: int | None = None
+) -> ToolResponse:
     """Search across all sections using TF-IDF relevance ranking.
 
     Args:
