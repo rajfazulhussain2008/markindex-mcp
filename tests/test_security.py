@@ -42,13 +42,13 @@ class TestManageSecurity(unittest.TestCase):
                         malicious = os.path.join(external_dir, "malicious.md")
                         with open(malicious, "w") as f:
                             f.write("hacked")
-                        
+
                         symlink_path = os.path.join(raw_dir, "sym.md")
                         try:
                             os.symlink(malicious, symlink_path)
                         except OSError:
                             self.skipTest("Symlink creation failed")
-                            
+
                         res = ingest_document(symlink_path)
                         self.assertFalse(res["success"])
                         self.assertEqual(res["code"], "ACCESS_DENIED")

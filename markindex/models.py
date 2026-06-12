@@ -14,6 +14,7 @@ class ToolResponse(TypedDict):
 
 class SectionNode(TypedDict):
     """Represents a parsed markdown section."""
+
     level: int
     title: str
     content: str
@@ -22,6 +23,7 @@ class SectionNode(TypedDict):
 
 class DocumentMetadata(TypedDict):
     """Metadata describing an ingested document."""
+
     filepath: str
     filename: str
     ingested_at: str
@@ -30,6 +32,7 @@ class DocumentMetadata(TypedDict):
 
 class DocumentRecord(TypedDict):
     """The internal representation of a document stored in memory."""
+
     markdown: str
     filepath: str
     filename: str

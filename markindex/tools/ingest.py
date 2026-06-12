@@ -120,7 +120,7 @@ def ingest_text(title: str, text: str) -> ToolResponse:
         if len(text) > settings.MAX_TEXT_CHARS:
             return err(
                 f"Text too large: {len(text)} exceeds max {settings.MAX_TEXT_CHARS} chars.",
-                "TEXT_TOO_LARGE"
+                "TEXT_TOO_LARGE",
             )
 
         doc_id = str(uuid.uuid4())

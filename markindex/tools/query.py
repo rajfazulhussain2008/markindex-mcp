@@ -117,6 +117,11 @@ def search_sections(
     Returns:
         Dict with status and list of matching sections.
     """
+    if not query or not query.strip():
+        return err("Query cannot be empty.", "EMPTY_QUERY")
+    if limit is not None and limit <= 0:
+        return err("limit must be positive.", "INVALID_LIMIT")
+
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
@@ -141,6 +146,11 @@ def search_all_documents(query: str, is_regex: bool = False, limit: int = 10) ->
     Returns:
         Dict with status and list of top matching sections from any document.
     """
+    if not query or not query.strip():
+        return err("Query cannot be empty.", "EMPTY_QUERY")
+    if limit is not None and limit <= 0:
+        return err("limit must be positive.", "INVALID_LIMIT")
+
     all_results = []
 
     for doc_id, doc in documents.items():
@@ -149,12 +159,12 @@ def search_all_documents(query: str, is_regex: bool = False, limit: int = 10) ->
             m_copy = dict(m)
             m_copy["document_id"] = doc_id
             m_copy["filename"] = doc["filename"]
-            m_copy["path"] = doc["filepath"]
+            m_copy["filepath"] = doc["filepath"]
             all_results.append(m_copy)
 
     all_results.sort(key=lambda x: x["score"], reverse=True)
     results = all_results[:limit]
-    
+
     logger.info("Global search '%s' returned %d results", query, len(results))
     return ok(results)
 

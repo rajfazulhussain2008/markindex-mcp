@@ -162,6 +162,7 @@ class TestIngestionTools(unittest.TestCase):
 
     def test_search_all_documents(self):
         from markindex.tools.query import search_all_documents
+
         documents.clear()
 
         # Ingest two documents
@@ -171,36 +172,65 @@ class TestIngestionTools(unittest.TestCase):
         res = search_all_documents("cars", limit=10)
         self.assertTrue(res["success"])
         self.assertEqual(len(res["data"]), 2)
-        
+
         # Verify result contains global search keys
         first_result = res["data"][0]
         self.assertIn("document_id", first_result)
         self.assertIn("filename", first_result)
         self.assertIn("path", first_result)
-        
+
         # Limit test
         res_limit = search_all_documents("cover", limit=1)
         self.assertTrue(res_limit["success"])
         self.assertEqual(len(res_limit["data"]), 1)
 
+    def test_search_all_documents_validation(self):
+        from markindex.tools.query import search_all_documents
+
+        res = search_all_documents("   ")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "EMPTY_QUERY")
+
+        res_limit = search_all_documents("cars", limit=0)
+        self.assertFalse(res_limit["success"])
+        self.assertEqual(res_limit["code"], "INVALID_LIMIT")
+
+    def test_search_sections_validation(self):
+        from markindex.tools.query import search_sections
+
+        res_ingest = ingest_text("SearchDoc", "# Car\nCars are good.")
+        doc_id = res_ingest["data"]["document_id"]
+
+        res = search_sections(doc_id, "")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "EMPTY_QUERY")
+
+        res_limit = search_sections(doc_id, "Car", limit=-5)
+        self.assertFalse(res_limit["success"])
+        self.assertEqual(res_limit["code"], "INVALID_LIMIT")
+
     def test_ingest_directory(self):
         from markindex.tools.ingest import ingest_directory
+
         with tempfile.TemporaryDirectory() as temp_dir:
             with patch("markindex.tools.ingest.settings.RAW_DIR", temp_dir):
                 file1 = os.path.join(temp_dir, "file1.md")
                 file2 = os.path.join(temp_dir, "file2.txt")
-                with open(file1, "w") as f: f.write("# Test1")
-                with open(file2, "w") as f: f.write("Test2")
-                
+                with open(file1, "w") as f:
+                    f.write("# Test1")
+                with open(file2, "w") as f:
+                    f.write("Test2")
+
                 res = ingest_directory(temp_dir)
                 self.assertTrue(res["success"])
                 self.assertEqual(len(res["data"]["ingested"]), 2)
 
     def test_get_adjacent_sections(self):
         from markindex.tools.navigate import get_adjacent_sections
+
         res_ingest = ingest_text("Nav", "# Sec1\n\n# Sec2\n\n# Sec3")
         doc_id = res_ingest["data"]["document_id"]
-        
+
         res = get_adjacent_sections(doc_id, "Sec2")
         self.assertTrue(res["success"])
         self.assertIn("Sec1", res["data"]["previous"]["title"])
@@ -208,6 +238,7 @@ class TestIngestionTools(unittest.TestCase):
 
     def test_get_document_outline(self):
         from markindex.tools.query import get_document_outline
+
         res_ingest = ingest_text("Out", "# H1\n## H2")
         doc_id = res_ingest["data"]["document_id"]
         res = get_document_outline(doc_id)
@@ -216,7 +247,12 @@ class TestIngestionTools(unittest.TestCase):
 
     def test_summarize_section(self):
         from markindex.tools.navigate import summarize_section
-        res_ingest = ingest_text("Sum", "# Long Sec\n\n" + "A very long sentence about testing things out to make sure summarization works properly and returns exactly what we want without failing. " * 50)
+
+        long_text = (
+            "A very long sentence about testing things out to make sure summarization "
+            "works properly and returns exactly what we want without failing. " * 50
+        )
+        res_ingest = ingest_text("Sum", "# Long Sec\n\n" + long_text)
         doc_id = res_ingest["data"]["document_id"]
         res = summarize_section(doc_id, "Long Sec", num_sentences=1)
         self.assertTrue(res["success"])
@@ -224,6 +260,7 @@ class TestIngestionTools(unittest.TestCase):
 
     def test_read_section_not_found_message(self):
         from markindex.tools.query import read_section
+
         res_ingest = ingest_text("Msg", "# Apple\n# Banana\n")
         doc_id = res_ingest["data"]["document_id"]
         res = read_section(doc_id, "Orange")
@@ -233,6 +270,7 @@ class TestIngestionTools(unittest.TestCase):
 
     def test_delete_document(self):
         from markindex.tools.manage import delete_document
+
         res_ingest = ingest_text("DeleteMe", "Test")
         doc_id = res_ingest["data"]["document_id"]
         res = delete_document(doc_id)
