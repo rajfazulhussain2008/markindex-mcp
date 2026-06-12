@@ -4,7 +4,6 @@ Provides tools for traversing the document tree using sibling and
 parent navigation, reading sections, and generating extractive summaries.
 """
 
-
 from markindex.core.parser import find_section, get_flat_navigation_map, section_to_markdown
 from markindex.core.summarizer import summarize_text
 from markindex.exceptions import DocumentNotFoundError
@@ -79,7 +78,7 @@ def summarize_section(doc_id: str, section_title: str, num_sentences: int = 5) -
         return err(f"Section '{section_title}' not found.", "SECTION_NOT_FOUND")
 
     markdown_content = section_to_markdown(section_node)
-    
+
     if len(markdown_content) < 500:
         return ok({"summary": markdown_content, "note": "Section is already short."})
 

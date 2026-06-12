@@ -28,10 +28,12 @@ jobs:
         pip install -e .[dev,youtube]
 
     - name: Lint with Ruff
-      run: ruff check .
+      run: |
+        ruff format --check .
+        ruff check .
 
     - name: Compile source code
       run: python -m compileall markindex/
 
     - name: Run Tests
-      run: pytest tests/ -v
+      run: pytest tests/ -v --cov=markindex --cov-report=term-missing --cov-fail-under=80

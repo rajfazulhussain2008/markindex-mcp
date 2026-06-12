@@ -60,6 +60,7 @@ We discuss the implications of these findings in detail.
 In conclusion, the project was successful and met all objectives.
 """
 
+
 class TestParser(unittest.TestCase):
     def setUp(self):
         self.tree = parse_markdown_to_tree(SAMPLE_MARKDOWN)
@@ -75,18 +76,12 @@ class TestParser(unittest.TestCase):
         self.assertEqual(intro["children"][1]["title"], "Objectives")
 
     def test_duplicate_section_ids(self):
-        markdown = (
-            "# Chapter 1\n"
-            "## Summary\n"
-            "first\n"
-            "## Summary\n"
-            "second\n"
-        )
+        markdown = "# Chapter 1\n## Summary\nfirst\n## Summary\nsecond\n"
         tree = parse_markdown_to_tree(markdown)
         ch1 = tree[0]
         s1 = ch1["children"][0]
         s2 = ch1["children"][1]
-        
+
         self.assertEqual(s1["id"], "chapter-1-summary")
         self.assertEqual(s2["id"], "chapter-1-summary-2")
         self.assertEqual(s2["path"], "Chapter 1 > Summary (2)")
@@ -246,6 +241,7 @@ class TestStorage(unittest.TestCase):
         meta, md = parse_frontmatter(content)
         self.assertEqual(meta, {})
         self.assertEqual(md, content)
+
 
 if __name__ == "__main__":
     unittest.main()

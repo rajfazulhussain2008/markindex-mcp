@@ -55,11 +55,7 @@ def serialize_frontmatter(metadata: dict[str, Any], markdown_content: str) -> st
     Returns:
         Complete file content string with frontmatter header.
     """
-    lines = [
-        "---",
-        json.dumps(metadata, indent=2),
-        "---"
-    ]
+    lines = ["---", json.dumps(metadata, indent=2), "---"]
     return "\n".join(lines) + "\n\n" + markdown_content.strip()
 
 
@@ -137,13 +133,13 @@ def _generate_wiki_index() -> None:
         "# 📚 Master Knowledge Index",
         "",
         "This is the auto-generated index of all documents currently ingested in the system.",
-        ""
+        "",
     ]
 
     for filename in os.listdir(settings.WIKI_DIR):
         if not filename.endswith(".md") or filename == "index.md":
             continue
-        
+
         filepath = os.path.join(settings.WIKI_DIR, filename)
         try:
             with open(filepath, encoding="utf-8") as f:

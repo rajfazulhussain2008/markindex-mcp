@@ -129,6 +129,36 @@ def search_sections(
     return ok(matches)
 
 
+@mcp.tool()
+def search_all_documents(query: str, is_regex: bool = False, limit: int = 10) -> ToolResponse:
+    """Search across all indexed documents using TF-IDF relevance ranking.
+
+    Args:
+        query: Search query or regular expression.
+        is_regex: If True, treat query as a regex pattern.
+        limit: Max number of total results to return globally. Defaults to 10.
+
+    Returns:
+        Dict with status and list of top matching sections from any document.
+    """
+    all_results = []
+
+    for doc_id, doc in documents.items():
+        doc_matches = rank_sections_tfidf(doc["tree"], query, is_regex)
+        for m in doc_matches:
+            m_copy = dict(m)
+            m_copy["document_id"] = doc_id
+            m_copy["filename"] = doc["filename"]
+            m_copy["path"] = doc["filepath"]
+            all_results.append(m_copy)
+
+    all_results.sort(key=lambda x: x["score"], reverse=True)
+    results = all_results[:limit]
+    
+    logger.info("Global search '%s' returned %d results", query, len(results))
+    return ok(results)
+
+
 def _section_not_found_message(tree: list[dict], section_title: str) -> str:
     """Generate a helpful error message with suggestions."""
     all_titles: list[str] = []

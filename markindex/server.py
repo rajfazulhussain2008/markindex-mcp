@@ -37,6 +37,7 @@ def _load_cache() -> None:
             "ingested_at": metadata.get("ingested_at", "Unknown"),
             "size_chars": metadata.get("size_chars", len(markdown)),
             "tree": parse_markdown_to_tree(markdown),
+            "metadata": metadata,
         }
     if cached:
         logger.info("Restored %d documents from cache", len(cached))
@@ -48,6 +49,7 @@ def _register_tools() -> None:
     import markindex.tools.manage  # noqa: F401
     import markindex.tools.navigate  # noqa: F401
     import markindex.tools.query  # noqa: F401
+
     logger.debug("All tool modules registered")
 
 

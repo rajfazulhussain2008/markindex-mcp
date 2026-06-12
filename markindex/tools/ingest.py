@@ -43,13 +43,17 @@ def ingest_document(filepath: str) -> ToolResponse:
             actual_filepath = os.path.realpath(filepath)
             if not os.path.exists(actual_filepath):
                 return err(f"File not found at {actual_filepath}", "FILE_NOT_FOUND")
-            
+
+            ext = os.path.splitext(actual_filepath)[1].lower()
+            if ext not in settings.SUPPORTED_EXTENSIONS:
+                return err(f"Unsupported file extension: {ext}", "UNSUPPORTED_EXTENSION")
+
             if not settings.ALLOW_EXTERNAL_FILES:
                 raw_dir_abs = os.path.realpath(settings.RAW_DIR)
                 if os.path.commonpath([actual_filepath, raw_dir_abs]) != raw_dir_abs:
                     return err(
                         "External file ingestion disabled. File must be inside RAW_DIR.",
-                        "ACCESS_DENIED"
+                        "ACCESS_DENIED",
                     )
 
             file_size = os.path.getsize(actual_filepath)
@@ -57,7 +61,7 @@ def ingest_document(filepath: str) -> ToolResponse:
             if file_size > max_size_bytes:
                 return err(
                     f"File too large: {file_size} bytes exceeds max {settings.MAX_FILE_MB}MB.",
-                    "FILE_TOO_LARGE"
+                    "FILE_TOO_LARGE",
                 )
 
         result = md_converter.convert(actual_filepath)
@@ -76,7 +80,7 @@ def ingest_document(filepath: str) -> ToolResponse:
 
         cache_path = save_document(doc_id, metadata, markdown_text)
         tree = parse_markdown_to_tree(markdown_text)
-        
+
         documents[doc_id] = {
             "markdown": markdown_text,
             "filepath": metadata["filepath"],
@@ -84,7 +88,7 @@ def ingest_document(filepath: str) -> ToolResponse:
             "ingested_at": metadata["ingested_at"],
             "size_chars": metadata["size_chars"],
             "tree": tree,
-            "metadata": metadata
+            "metadata": metadata,
         }
 
         logger.info("Successfully ingested document '%s' -> ID: %s", metadata["filename"], doc_id)
@@ -113,6 +117,12 @@ def ingest_text(title: str, text: str) -> ToolResponse:
         A dictionary with status and the new document ID.
     """
     try:
+        if len(text) > settings.MAX_TEXT_CHARS:
+            return err(
+                f"Text too large: {len(text)} exceeds max {settings.MAX_TEXT_CHARS} chars.",
+                "TEXT_TOO_LARGE"
+            )
+
         doc_id = str(uuid.uuid4())
         now = datetime.now(UTC).isoformat()
         tree = parse_markdown_to_tree(text)
@@ -131,7 +141,7 @@ def ingest_text(title: str, text: str) -> ToolResponse:
             "ingested_at": metadata["ingested_at"],
             "size_chars": metadata["size_chars"],
             "tree": tree,
-            "metadata": metadata
+            "metadata": metadata,
         }
 
         cache_path = save_document(doc_id, metadata, text)
@@ -189,7 +199,7 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> ToolResponse:
             "ingested_at": metadata["ingested_at"],
             "size_chars": metadata["size_chars"],
             "tree": tree,
-            "metadata": metadata
+            "metadata": metadata,
         }
 
         cache_path = save_document(doc_id, metadata, markdown_text)
@@ -238,16 +248,21 @@ def ingest_directory(dir_path: str) -> ToolResponse:
         else:
             results["failed"].append({"file": entry.name, "error": res.get("error")})
 
-    logger.info("Directory ingestion complete. Success: %d, Failed: %d",
-                len(results["ingested"]), len(results["failed"]))
+    logger.info(
+        "Directory ingestion complete. Success: %d, Failed: %d",
+        len(results["ingested"]),
+        len(results["failed"]),
+    )
     return ok(results)
 
 
 # ── Private Helpers ────────────────────────────────────────────────
 
+
 def _download_url(url: str) -> tuple[str, str]:
     """Download a URL to a temporary file with strict checks."""
     from urllib.parse import urlparse
+
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError("Only http and https schemes are supported.")
@@ -255,7 +270,7 @@ def _download_url(url: str) -> tuple[str, str]:
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     max_size = settings.MAX_FILE_MB * 1024 * 1024
     content = bytearray()
-    
+
     with urllib.request.urlopen(req, timeout=15) as response:
         content_length = response.headers.get("Content-Length")
         if content_length and int(content_length) > max_size:
@@ -327,10 +342,9 @@ def _get_youtube_title(video_id: str) -> str:
     return f"YouTube Video {video_id}"
 
 
-def _format_transcript(
-    title: str, transcript: list[dict], interval_seconds: int
-) -> str:
+def _format_transcript(title: str, transcript: list[dict], interval_seconds: int) -> str:
     """Format a YouTube transcript into time-chunked Markdown."""
+
     def _ts(seconds: float) -> str:
         return f"{int(seconds // 60):02d}:{int(seconds % 60):02d}"
 

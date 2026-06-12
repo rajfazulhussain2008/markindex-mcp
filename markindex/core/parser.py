@@ -15,12 +15,12 @@ logger = get_logger(__name__)
 
 # Pre-compiled header patterns ordered by priority
 _HEADER_PATTERNS = [
-    ("markdown",  re.compile(r"^(#{1,6})\s+(.*)")),
-    ("section",   re.compile(r"^(SECTION\s+\d+.*)", re.IGNORECASE)),
-    ("chapter",   re.compile(r"^(CHAPTER\s+[A-Z0-9]+(?:\s+.*)?)", re.IGNORECASE)),
-    ("appendix",  re.compile(r"^(APPENDIX\s+[A-Z](?:\s+.*)?)", re.IGNORECASE)),
-    ("numbered",  re.compile(r"^(\d+\.\d+(?:\.\d+)?)\s+(.*)")),
-    ("roman",     re.compile(r"^([IVXLCDM]+)\.\s+(.*)", re.IGNORECASE)),
+    ("markdown", re.compile(r"^(#{1,6})\s+(.*)")),
+    ("section", re.compile(r"^(SECTION\s+\d+.*)", re.IGNORECASE)),
+    ("chapter", re.compile(r"^(CHAPTER\s+[A-Z0-9]+(?:\s+.*)?)", re.IGNORECASE)),
+    ("appendix", re.compile(r"^(APPENDIX\s+[A-Z](?:\s+.*)?)", re.IGNORECASE)),
+    ("numbered", re.compile(r"^(\d+\.\d+(?:\.\d+)?)\s+(.*)")),
+    ("roman", re.compile(r"^([IVXLCDM]+)\.\s+(.*)", re.IGNORECASE)),
     ("timestamp", re.compile(r"^(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})(.*)")),
 ]
 
@@ -81,14 +81,14 @@ def parse_markdown_to_tree(markdown_text: str) -> list[dict]:
             full_path = " > ".join(node_path)
             slug = re.sub(r"[^\w\s-]", "", full_path.lower()).strip()
             slug = re.sub(r"[-\s]+", "-", slug)
-            
+
             # Handle duplicate IDs
             if slug in seen_ids:
                 seen_ids[slug] += 1
                 slug = f"{slug}-{seen_ids[slug]}"
             else:
                 seen_ids[slug] = 1
-                
+
             # Handle duplicate paths
             path_display = full_path
             path_key = full_path.lower().strip()
@@ -97,7 +97,7 @@ def parse_markdown_to_tree(markdown_text: str) -> list[dict]:
                 path_display = f"{full_path} ({seen_paths[path_key]})"
             else:
                 seen_paths[path_key] = 1
-                
+
             node["id"] = slug
             node["path"] = path_display
             _assign_ids(node["children"], node_path, seen_ids, seen_paths)
@@ -227,9 +227,11 @@ def find_section(tree: list[dict], target_title: str) -> dict | None:
     # Phase 1 — exact title, exact path, or exact id
     def _exact(nodes: list[dict]) -> dict | None:
         for node in nodes:
-            if (node["title"].lower().strip() == target or 
-                node.get("path", "").lower().strip() == target or 
-                node.get("id", "") == target):
+            if (
+                node["title"].lower().strip() == target
+                or node.get("path", "").lower().strip() == target
+                or node.get("id", "") == target
+            ):
                 return node
             found = _exact(node["children"])
             if found:
@@ -239,9 +241,11 @@ def find_section(tree: list[dict], target_title: str) -> dict | None:
     # Phase 2 — substring
     def _substring(nodes: list[dict]) -> dict | None:
         for node in nodes:
-            if (target in node["title"].lower().strip() or
-                target in node.get("path", "").lower().strip() or
-                target in node.get("id", "")):
+            if (
+                target in node["title"].lower().strip()
+                or target in node.get("path", "").lower().strip()
+                or target in node.get("id", "")
+            ):
                 return node
             found = _substring(node["children"])
             if found:
@@ -259,7 +263,10 @@ def find_section(tree: list[dict], target_title: str) -> dict | None:
     mapping: dict[str, dict] = {}
     _collect_titles(tree, mapping)
     close = difflib.get_close_matches(
-        target, list(mapping.keys()), n=1, cutoff=0.4,
+        target,
+        list(mapping.keys()),
+        n=1,
+        cutoff=0.4,
     )
     if close:
         logger.debug("Fuzzy matched '%s' → '%s'", target_title, close[0])
@@ -305,7 +312,7 @@ def get_flat_navigation_map(tree: list[dict]) -> dict[str, dict[str, Any]]:
                 parent_map[node["id"]] = {
                     "id": parent_node["id"],
                     "title": parent_node["title"],
-                    "path": parent_node["path"]
+                    "path": parent_node["path"],
                 }
             _traverse(node["children"], node)
 
@@ -314,12 +321,12 @@ def get_flat_navigation_map(tree: list[dict]) -> dict[str, dict[str, Any]]:
     nav_map: dict[str, dict[str, Any]] = {}
     for i, node in enumerate(flat_list):
         node_id = node["id"]
-        
+
         previous_node = None
         if i > 0:
             prev = flat_list[i - 1]
             previous_node = {"id": prev["id"], "title": prev["title"], "path": prev["path"]}
-            
+
         next_node = None
         if i < len(flat_list) - 1:
             nxt = flat_list[i + 1]

@@ -21,29 +21,45 @@ class Settings:
         SUPPORTED_EXTENSIONS: File extensions accepted by the directory ingestion tool.
     """
 
-    WIKI_DIR: str = field(default_factory=lambda: os.environ.get(
-        "MARKINDEX_WIKI_DIR",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "wiki")
-    ))
-    OUTPUTS_DIR: str = field(default_factory=lambda: os.environ.get(
-        "MARKINDEX_OUTPUTS_DIR",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs")
-    ))
-    RAW_DIR: str = field(default_factory=lambda: os.environ.get(
-        "MARKINDEX_RAW_DIR",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "raw")
-    ))
+    WIKI_DIR: str = field(
+        default_factory=lambda: os.environ.get(
+            "MARKINDEX_WIKI_DIR",
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "wiki"),
+        )
+    )
+    OUTPUTS_DIR: str = field(
+        default_factory=lambda: os.environ.get(
+            "MARKINDEX_OUTPUTS_DIR",
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs"),
+        )
+    )
+    RAW_DIR: str = field(
+        default_factory=lambda: os.environ.get(
+            "MARKINDEX_RAW_DIR",
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "raw"),
+        )
+    )
     MAX_FILE_MB: int = int(os.environ.get("MARKINDEX_MAX_FILE_MB", "50"))
-    ALLOW_EXTERNAL_FILES: bool = field(default_factory=lambda: os.environ.get(
-        "MARKINDEX_ALLOW_EXTERNAL_FILES", "false"
-    ).lower() == "true")
+    MAX_TEXT_CHARS: int = int(os.environ.get("MARKINDEX_MAX_TEXT_CHARS", "1000000"))
+    ALLOW_EXTERNAL_FILES: bool = field(
+        default_factory=lambda: (
+            os.environ.get("MARKINDEX_ALLOW_EXTERNAL_FILES", "false").lower() == "true"
+        )
+    )
     LOG_LEVEL: str = field(default_factory=lambda: os.environ.get("MARKINDEX_LOG_LEVEL", "INFO"))
     MAX_SEARCH_RESULTS: int = 50
     DEFAULT_SUMMARY_SENTENCES: int = 5
     DEFAULT_YOUTUBE_INTERVAL: int = 120
     SUPPORTED_EXTENSIONS: tuple = (
-        ".pdf", ".docx", ".doc", ".xlsx", ".pptx",
-        ".html", ".htm", ".txt", ".md",
+        ".pdf",
+        ".docx",
+        ".doc",
+        ".xlsx",
+        ".pptx",
+        ".html",
+        ".htm",
+        ".txt",
+        ".md",
     )
 
     def __post_init__(self) -> None:

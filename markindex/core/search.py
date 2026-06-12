@@ -16,15 +16,32 @@ def tokenize(text: str) -> list[str]:
     """Tokenize text into lowercase alphanumeric words."""
     tokens = re.findall(r"\b\w+\b", text.lower())
     stopwords = {
-        "the", "and", "is", "in", "it", "of", "to", "a", "an", "for",
-        "on", "with", "as", "by", "this", "that", "are", "at", "be"
+        "the",
+        "and",
+        "is",
+        "in",
+        "it",
+        "of",
+        "to",
+        "a",
+        "an",
+        "for",
+        "on",
+        "with",
+        "as",
+        "by",
+        "this",
+        "that",
+        "are",
+        "at",
+        "be",
     }
     return [t for t in tokens if t not in stopwords]
 
 
 def get_ngrams(tokens: list[str], n: int) -> list[str]:
     """Generate n-grams from a list of tokens."""
-    return [" ".join(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
+    return [" ".join(tokens[i : i + n]) for i in range(len(tokens) - n + 1)]
 
 
 def rank_sections_tfidf(
@@ -71,11 +88,11 @@ def rank_sections_tfidf(
         else:
             title_lower = node["title"].lower()
             content_lower = node["content"].lower()
-            
+
             # Match if EXACT phrase is present
             t_match = query_lower in title_lower
             c_match = query_lower in content_lower
-            
+
             # OR Match if ANY token is present
             if not (t_match or c_match):
                 for term in query_unigrams_pre:
@@ -83,7 +100,7 @@ def rank_sections_tfidf(
                         t_match = True
                     if term in content_lower:
                         c_match = True
-        
+
         if t_match or c_match:
             filtered.append((node, path, t_match, c_match))
 
@@ -125,7 +142,7 @@ def rank_sections_tfidf(
         u = tokenize(f"{node['title']} {node['content']}")
         b = get_ngrams(u, 2)
         score = 5.0 if title_matched else 0.0
-        
+
         for term in query_terms:
             tf = b.count(term) if " " in term else u.count(term)
             if tf > 0:
@@ -137,14 +154,16 @@ def rank_sections_tfidf(
             node["content"], query_lower, rx, content_matched, query_unigrams_pre
         )
 
-        results.append({
-            "section_title": node["title"],
-            "section_id": node.get("id"),
-            "path": " > ".join(path),
-            "title_matched": title_matched,
-            "snippets": snippets,
-            "score": round(score, 4),
-        })
+        results.append(
+            {
+                "section_title": node["title"],
+                "section_id": node.get("id"),
+                "path": " > ".join(path),
+                "title_matched": title_matched,
+                "snippets": snippets,
+                "score": round(score, 4),
+            }
+        )
 
     results.sort(key=lambda x: x["score"], reverse=True)
     logger.debug("Search '%s' returned %d results", query, len(results))
@@ -178,7 +197,7 @@ def _extract_snippets(
                 break
             indices.append((idx, idx + len(query_lower)))
             start_idx = idx + len(query_lower)
-            
+
         # Fallback to individual terms if exact phrase not found
         if not indices:
             for term in query_terms:
@@ -191,7 +210,7 @@ def _extract_snippets(
                         break
                     indices.append((idx, idx + len(term)))
                     start_idx = idx + len(term)
-        
+
         # Sort indices by start position
         indices.sort(key=lambda x: x[0])
 

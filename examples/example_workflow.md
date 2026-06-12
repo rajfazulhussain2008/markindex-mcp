@@ -4,7 +4,8 @@ This document illustrates how an LLM can use MarkIndex MCP tools sequentially.
 
 1. **Ingest the file**
    ```python
-   ingest_document("examples/sample_policy.md")
+   # By default, files must be in the raw/ directory
+   ingest_document("raw/sample_policy.md")
    # Returns doc_id: "doc_123"
    ```
 

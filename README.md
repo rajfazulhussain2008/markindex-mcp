@@ -139,6 +139,35 @@ get_adjacent_sections(doc_id="doc_xyz123", section_title="vehicle-claims-compens
 save_to_outputs("vehicle_claims_summary.md", summary)
 ```
 
+### Example Output
+When you search or read sections, MarkIndex returns clean JSON structures:
+
+**`search_sections()` Result:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "section_title": "vehicle-claims-compensation",
+      "snippets": ["...eligible for vehicle compensation...", "...$0.65 per mile..."],
+      "score": 12.4
+    }
+  ],
+  "error": null,
+  "code": null
+}
+```
+
+**`read_section()` Result:**
+```json
+{
+  "success": true,
+  "data": "## Vehicle Compensation\n\nEmployees who use their personal vehicles for corporate travel are eligible for vehicle compensation.\nThe rate is $0.65 per mile.",
+  "error": null,
+  "code": null
+}
+```
+
 ---
 
 ## 🚀 Quick Start
@@ -241,6 +270,14 @@ When calling `read_section` or `get_adjacent_sections`, always use the **exact s
 
 ### Missing `Any` or `dict` Type Hint Errors
 If you are upgrading from `1.x` to `2.x`, ensure you have installed the exact `2.0.0` version. MarkIndex `2.0.0` uses Python 3.11+ strictly typed `ToolResponse` models to guarantee clean JSON structures for all LLM tools.
+
+### Common Errors
+| Error Code | Meaning & Resolution |
+|---|---|
+| `ACCESS_DENIED` | You tried to ingest a local file outside the `raw/` directory. Move the file into `raw/` or set `MARKINDEX_ALLOW_EXTERNAL_FILES=true`. |
+| `FILE_TOO_LARGE` | The file exceeds the `MARKINDEX_MAX_FILE_MB` setting (default 50MB). |
+| `TEXT_TOO_LARGE` | The raw text passed to `ingest_text` exceeds `MARKINDEX_MAX_TEXT_CHARS`. |
+| `SECTION_NOT_FOUND` | You requested a section title that doesn't exist. Check the suggestions in the error message or use `get_document_outline()`. |
 
 ---
 
