@@ -27,6 +27,32 @@
 
 ---
 
+## Preview
+
+Here’s what MarkIndex MCP looks like when an LLM searches and navigates a local policy document.
+
+### Server startup
+
+![Server startup](docs/assets/server-startup.svg)
+
+### Search result
+
+![Search result](docs/assets/search-result.svg)
+
+### Stable outline IDs
+
+![Outline result](docs/assets/outline-result.svg)
+
+### Read by section ID
+
+![Read section](docs/assets/read-section.svg)
+
+### Save outputs
+
+![Save output](docs/assets/save-output.svg)
+
+---
+
 ## ✨ Features
 
 | Capability | Description |

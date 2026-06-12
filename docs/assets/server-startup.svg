@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 220" width="900" height="220">
+  <rect width="900" height="220" rx="6" ry="6" fill="#1e1e1e" />
+  <circle cx="20" cy="20" r="6" fill="#ff5f56" />
+  <circle cx="40" cy="20" r="6" fill="#ffbd2e" />
+  <circle cx="60" cy="20" r="6" fill="#27c93f" />
+  <g font-family="monospace" font-size="14" fill="#d4d4d4" transform="translate(20, 50)">
+    <text x="0" y="0"><tspan fill="#56b6c2">$</tspan> python -m markindex</text>
+    <text x="0" y="30">Starting MarkIndex MCP v2.0.0</text>
+    <text x="0" y="60">Raw Directory: <tspan fill="#98c379">./raw</tspan></text>
+    <text x="0" y="90">Wiki Directory: <tspan fill="#98c379">./wiki</tspan></text>
+    <text x="0" y="120">Outputs Directory: <tspan fill="#98c379">./outputs</tspan></text>
+    <text x="0" y="150" fill="#98c379">Server ready — listening for connections</text>
+  </g>
+</svg>

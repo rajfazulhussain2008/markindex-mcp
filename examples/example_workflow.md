@@ -1,6 +1,7 @@
 # Example MCP LLM Workflow
 
 This document illustrates how an LLM can use MarkIndex MCP tools sequentially.
+See README Preview for terminal-style output screenshots.
 
 1. **Ingest the file**
    ```python

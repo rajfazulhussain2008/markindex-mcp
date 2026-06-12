@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200" width="900" height="200">
+  <rect width="900" height="200" rx="6" ry="6" fill="#1e1e1e" />
+  <circle cx="20" cy="20" r="6" fill="#ff5f56" />
+  <circle cx="40" cy="20" r="6" fill="#ffbd2e" />
+  <circle cx="60" cy="20" r="6" fill="#27c93f" />
+  <g font-family="monospace" font-size="14" fill="#d4d4d4" transform="translate(20, 50)">
+    <text x="0" y="0"><tspan fill="#61afef">&gt;</tspan> read_section(doc_id=<tspan fill="#98c379">"sample-policy"</tspan>, section_title=<tspan fill="#e5c07b">"company-travel-policy-vehicle-compensation"</tspan>)</text>
+    <text x="0" y="40"><tspan fill="#61afef">## Vehicle Compensation</tspan></text>
+    <text x="0" y="80">Employees may claim compensation for approved business travel using personal vehicles.</text>
+    <text x="0" y="110">Claims must include date, distance, purpose, and manager approval.</text>
+  </g>
+</svg>

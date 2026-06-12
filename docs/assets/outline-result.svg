@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320">
+  <rect width="900" height="320" rx="6" ry="6" fill="#1e1e1e" />
+  <circle cx="20" cy="20" r="6" fill="#ff5f56" />
+  <circle cx="40" cy="20" r="6" fill="#ffbd2e" />
+  <circle cx="60" cy="20" r="6" fill="#27c93f" />
+  <g font-family="monospace" font-size="14" fill="#d4d4d4" transform="translate(20, 50)">
+    <text x="0" y="0"><tspan fill="#61afef">&gt;</tspan> get_document_outline(doc_id=<tspan fill="#98c379">"sample-policy"</tspan>)</text>
+    <text x="0" y="40">Company Travel Policy</text>
+    <text x="0" y="70">├── Vehicle Compensation</text>
+    <text x="0" y="95">│   id: <tspan fill="#e5c07b">company-travel-policy-vehicle-compensation</tspan></text>
+    <text x="0" y="125">├── Insurance Requirements</text>
+    <text x="0" y="150">│   id: <tspan fill="#e5c07b">company-travel-policy-insurance-requirements</tspan></text>
+    <text x="0" y="180">└── Claims Process</text>
+    <text x="0" y="210">    ├── Summary</text>
+    <text x="0" y="235">    │   id: <tspan fill="#e5c07b">company-travel-policy-claims-process-summary</tspan></text>
+    <text x="0" y="265">    └── Summary</text>
+    <text x="0" y="290">        id: <tspan fill="#e5c07b">company-travel-policy-claims-process-summary-2</tspan></text>
+  </g>
+</svg>

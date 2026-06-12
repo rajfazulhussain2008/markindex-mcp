@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" width="900" height="360">
+  <rect width="900" height="360" rx="6" ry="6" fill="#1e1e1e" />
+  <circle cx="20" cy="20" r="6" fill="#ff5f56" />
+  <circle cx="40" cy="20" r="6" fill="#ffbd2e" />
+  <circle cx="60" cy="20" r="6" fill="#27c93f" />
+  <g font-family="monospace" font-size="14" fill="#d4d4d4" transform="translate(20, 50)">
+    <text x="0" y="0"><tspan fill="#61afef">&gt;</tspan> search_sections(doc_id=<tspan fill="#98c379">"sample-policy"</tspan>, query=<tspan fill="#98c379">"vehicle compensation"</tspan>, limit=3)</text>
+    <text x="0" y="30">{</text>
+    <text x="0" y="55">  <tspan fill="#e06c75">"success"</tspan>: <tspan fill="#d19a66">true</tspan>,</text>
+    <text x="0" y="80">  <tspan fill="#e06c75">"data"</tspan>: [</text>
+    <text x="0" y="105">    {</text>
+    <text x="0" y="130">      <tspan fill="#e06c75">"section_title"</tspan>: <tspan fill="#98c379">"Vehicle Compensation"</tspan>,</text>
+    <text x="0" y="155">      <tspan fill="#e06c75">"section_id"</tspan>: <tspan fill="#e5c07b">"company-travel-policy-vehicle-compensation"</tspan>,</text>
+    <text x="0" y="180">      <tspan fill="#e06c75">"snippets"</tspan>: [<tspan fill="#98c379">"Employees may claim compensation for approved business travel..."</tspan>],</text>
+    <text x="0" y="205">      <tspan fill="#e06c75">"score"</tspan>: <tspan fill="#d19a66">12.42</tspan></text>
+    <text x="0" y="230">    }</text>
+    <text x="0" y="255">  ],</text>
+    <text x="0" y="280">  <tspan fill="#e06c75">"error"</tspan>: <tspan fill="#d19a66">null</tspan>,</text>
+    <text x="0" y="305">  <tspan fill="#e06c75">"code"</tspan>: <tspan fill="#d19a66">null</tspan></text>
+    <text x="0" y="330">}</text>
+  </g>
+</svg>
