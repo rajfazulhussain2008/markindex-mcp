@@ -41,8 +41,10 @@ def ingest_document(filepath: str) -> str:
     try:
         if is_url:
             actual_filepath, temp_file = _download_url(filepath)
-        elif not os.path.exists(filepath):
-            return f"Error: File not found at {filepath}"
+        else:
+            actual_filepath = os.path.abspath(filepath)
+            if not os.path.exists(actual_filepath):
+                return {"status": "error", "message": f"File not found at {actual_filepath}"}
 
         result = md_converter.convert(actual_filepath)
         markdown_text = result.text_content
@@ -225,12 +227,25 @@ def ingest_directory(directory_path: str) -> str:
 # ── Private Helpers ────────────────────────────────────────────────
 
 def _download_url(url: str) -> tuple[str, str]:
-    """Download a URL to a temporary file."""
+    """Download a URL to a temporary file with strict checks."""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError("Only http and https schemes are supported.")
+
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     max_size = 50 * 1024 * 1024  # 50 MB
     content = bytearray()
     
     with urllib.request.urlopen(req, timeout=15) as response:
+        content_length = response.headers.get("Content-Length")
+        if content_length and int(content_length) > max_size:
+            raise ValueError(f"File too large: {content_length} bytes (max {max_size})")
+
+        content_type = response.headers.get("Content-Type", "").lower()
+        if any(bad in content_type for bad in ("video/", "audio/", "application/octet-stream")):
+            raise ValueError(f"Unsupported content type: {content_type}")
+
         while True:
             chunk = response.read(8192)
             if not chunk:

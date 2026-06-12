@@ -22,6 +22,7 @@ def parse_frontmatter(file_content: str) -> tuple[dict[str, Any], str]:
     Returns:
         Tuple of (metadata_dict, markdown_content).
     """
+    file_content = file_content.lstrip("\ufeff").lstrip()
     metadata: dict[str, Any] = {}
     markdown_content = file_content
 
@@ -32,7 +33,7 @@ def parse_frontmatter(file_content: str) -> tuple[dict[str, Any], str]:
                 if ":" in line:
                     k, v = line.split(":", 1)
                     metadata[k.strip()] = v.strip()
-            markdown_content = parts[2].strip()
+            markdown_content = parts[2].lstrip()
 
     if "size_chars" in metadata:
         try:

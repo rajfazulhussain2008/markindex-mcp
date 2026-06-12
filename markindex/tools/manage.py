@@ -16,11 +16,11 @@ logger = get_logger(__name__)
 
 
 @mcp.tool()
-def list_documents() -> list[dict]:
+def list_documents() -> dict:
     """List all ingested documents currently available in the index.
 
     Returns:
-        List of document metadata dictionaries.
+        Dict with status and data containing document metadata.
     """
     result: list[dict] = []
     for doc_id, doc in documents.items():
@@ -34,7 +34,7 @@ def list_documents() -> list[dict]:
         })
 
     logger.debug("list_documents returned %d items", len(result))
-    return result
+    return {"status": "success", "data": result}
 
 
 @mcp.tool()
@@ -55,17 +55,17 @@ def delete_document(doc_id: str) -> str:
         deleted_disk = delete_document_file(doc_id)
     except Exception as exc:
         logger.error("Failed to delete cache file for %s: %s", doc_id, exc)
-        return f"Error deleting cache file: {exc}"
+        return {"status": "error", "message": f"Error deleting cache file: {exc}"}
 
     if deleted_mem or deleted_disk:
         logger.info("Deleted document '%s'", doc_id)
-        return f"Successfully deleted document '{doc_id}'."
+        return {"status": "success", "message": f"Successfully deleted document '{doc.get('filename')}' ({doc_id})"}
 
-    return f"Error: Document '{doc_id}' not found."
+    return {"status": "error", "message": f"Document ID '{doc_id}' not found in index."}
 
 
 @mcp.tool()
-def save_to_outputs(filename: str, content: str) -> str:
+def save_to_outputs(filename: str, content: str) -> dict:
     """Save an AI-generated report or content to the outputs/ folder.
 
     This tool permanently persists generated knowledge into the 3-folder system.
@@ -81,7 +81,7 @@ def save_to_outputs(filename: str, content: str) -> str:
         filename += ".md"
         
     if os.path.basename(filename) != filename:
-        return "Error: Invalid filename path traversal detected."
+        return {"status": "error", "message": "Error: Invalid filename path traversal detected."}
 
     safe_filename = "".join(c for c in filename if c.isalnum() or c in " ._-").strip()
     if not safe_filename:
@@ -91,13 +91,13 @@ def save_to_outputs(filename: str, content: str) -> str:
     outputs_dir_abs = os.path.abspath(settings.OUTPUTS_DIR)
     
     if not out_path.startswith(outputs_dir_abs):
-        return "Error: Invalid filename path traversal detected."
+        return {"status": "error", "message": "Error: Invalid filename path traversal detected."}
     
     try:
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(content)
         logger.info("Saved generated output to %s", out_path)
-        return f"Successfully saved output to {out_path}"
+        return {"status": "success", "message": f"Successfully saved output to {out_path}"}
     except Exception as exc:
-        logger.error("Failed to save output '%s': %s", out_path, exc)
-        return f"Error saving output: {exc}"
+        logger.error("Failed to save output: %s", exc)
+        return {"status": "error", "message": f"Error saving output: {exc}"}

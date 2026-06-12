@@ -25,6 +25,11 @@ def tokenize(text: str) -> list[str]:
     return re.findall(r"\b\w+\b", text.lower())
 
 
+def get_ngrams(tokens: list[str], n: int) -> list[str]:
+    """Generate n-grams from a list of tokens."""
+    return [" ".join(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
+
+
 def rank_sections_tfidf(
     tree: list[dict],
     query: str,
@@ -76,34 +81,53 @@ def rank_sections_tfidf(
     if not filtered:
         return []
 
-    # --- TF-IDF ---
-    corpus_tokens = [tokenize(f"{n['title']} {n['content']}") for n, _ in all_nodes]
-    total_docs = len(corpus_tokens)
-    query_terms = tokenize(query) if not is_regex else [query_lower]
+    # --- Advanced N-Gram TF-IDF ---
+    query_unigrams = tokenize(query) if not is_regex else [query_lower]
+    query_bigrams = get_ngrams(query_unigrams, 2) if not is_regex else []
+    query_terms = list(set(query_unigrams + query_bigrams))
+
     if not query_terms:
         query_terms = [query_lower]
 
-    df = {term: sum(1 for doc in corpus_tokens if term in doc) for term in query_terms}
+    corpus_unigrams = []
+    corpus_bigrams = []
+    filtered_indices = []
+    for i, (node, _) in enumerate(all_nodes):
+        unigrams = tokenize(f"{node['title']} {node['content']}")
+        corpus_unigrams.append(unigrams)
+        corpus_bigrams.append(get_ngrams(unigrams, 2))
+
+    total_docs = len(all_nodes)
+    df = {}
+    for term in query_terms:
+        count = 0
+        for u, b in zip(corpus_unigrams, corpus_bigrams):
+            if " " in term:
+                if term in b: count += 1
+            else:
+                if term in u: count += 1
+        df[term] = count
+
     idf = {term: math.log((total_docs + 1) / (df.get(term, 0) + 1)) + 1 for term in query_terms}
 
     results: list[dict] = []
     for node, path, title_matched, content_matched in filtered:
-        tokens = tokenize(f"{node['title']} {node['content']}")
+        u = tokenize(f"{node['title']} {node['content']}")
+        b = get_ngrams(u, 2)
         score = 5.0 if title_matched else 0.0
         
-        if not is_regex and len(query_terms) > 1:
-            if query_lower in f"{node['title']} {node['content']}".lower():
-                score += 15.0
-
         for term in query_terms:
-            tf = tokens.count(term)
+            tf = b.count(term) if " " in term else u.count(term)
             if tf > 0:
-                score += tf * idf[term]
+                # Give higher weight to bigram matches
+                weight = 2.5 if " " in term else 1.0
+                score += tf * idf[term] * weight
 
         snippets = _extract_snippets(node["content"], query_lower, rx, content_matched)
 
         results.append({
             "section_title": node["title"],
+            "section_id": node.get("id"),
             "path": " > ".join(path),
             "title_matched": title_matched,
             "snippets": snippets,

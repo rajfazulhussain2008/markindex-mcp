@@ -12,7 +12,9 @@ __pycache__/
 coverage.xml
 
 # Application data
-data/
+raw/
+wiki/
+outputs/
 
 # IDEs
 .vscode/
