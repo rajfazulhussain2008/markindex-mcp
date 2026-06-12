@@ -88,6 +88,23 @@ class TestParser(unittest.TestCase):
         self.assertEqual(intro["children"][0]["title"], "Background")
         self.assertEqual(intro["children"][1]["title"], "Objectives")
 
+    def test_duplicate_section_ids(self):
+        markdown = (
+            "# Chapter 1\n"
+            "## Summary\n"
+            "first\n"
+            "## Summary\n"
+            "second\n"
+        )
+        tree = parse_markdown_to_tree(markdown)
+        ch1 = tree[0]
+        s1 = ch1["children"][0]
+        s2 = ch1["children"][1]
+        
+        self.assertEqual(s1["id"], "chapter-1-summary")
+        self.assertEqual(s2["id"], "chapter-1-summary-2")
+        self.assertEqual(s2["path"], "Chapter 1 > Summary (2)")
+
     def test_section_content(self):
         conclusion = self.tree[3]
         self.assertIn("successful", conclusion["content"])
@@ -149,9 +166,9 @@ class TestNavigation(unittest.TestCase):
 
     def test_sibling_links(self):
         bg = self.nav["introduction-background"]
-        self.assertEqual(bg["parent"], "Introduction")
-        self.assertEqual(bg["previous"], "introduction")
-        self.assertEqual(bg["next"], "introduction-objectives")
+        self.assertEqual(bg["parent"]["title"], "Introduction")
+        self.assertEqual(bg["previous"]["id"], "introduction")
+        self.assertEqual(bg["next"]["id"], "introduction-objectives")
 
     def test_first_section_has_no_previous(self):
         intro = self.nav["introduction"]
@@ -264,14 +281,14 @@ class TestManageSecurity(unittest.TestCase):
     def test_save_to_outputs_path_traversal(self):
         from markindex.tools.manage import save_to_outputs
         res = save_to_outputs("../../../windows/system32/hack.md", "hacked")
-        self.assertEqual(res.get("status"), "error")
-        self.assertIn("path traversal", res.get("message", ""))
+        self.assertFalse(res["success"])
+        self.assertIn("path traversal", res["error"])
 
     def test_save_to_outputs_valid(self):
         from markindex.tools.manage import save_to_outputs
         res = save_to_outputs("valid_report.md", "content")
-        self.assertEqual(res.get("status"), "success")
-        self.assertIn("Successfully saved", res.get("message", ""))
+        self.assertTrue(res["success"])
+        self.assertIn("valid_report.md", res["data"]["saved_path"])
 
 
 if __name__ == "__main__":

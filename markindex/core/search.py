@@ -57,6 +57,7 @@ def rank_sections_tfidf(
 
     # --- Match Filtering ---
     query_lower = query.lower().strip()
+    query_unigrams_pre = tokenize(query) if not is_regex else []
     filtered: list[tuple[dict, list[str], bool, bool]] = []
     rx = None
 
@@ -66,17 +67,28 @@ def rank_sections_tfidf(
         except re.error:
             rx = re.compile(re.escape(query), re.IGNORECASE)
 
-        for node, path in all_nodes:
-            t_match = bool(rx.search(node["title"]))
-            c_match = bool(rx.search(node["content"]))
-            if t_match or c_match:
-                filtered.append((node, path, t_match, c_match))
-    else:
-        for node, path in all_nodes:
-            t_match = query_lower in node["title"].lower()
-            c_match = query_lower in node["content"].lower()
-            if t_match or c_match:
-                filtered.append((node, path, t_match, c_match))
+    for node, path in all_nodes:
+        if is_regex:
+            t_match = bool(rx.search(node["title"])) if rx else False
+            c_match = bool(rx.search(node["content"])) if rx else False
+        else:
+            title_lower = node["title"].lower()
+            content_lower = node["content"].lower()
+            
+            # Match if EXACT phrase is present
+            t_match = query_lower in title_lower
+            c_match = query_lower in content_lower
+            
+            # OR Match if ANY token is present
+            if not (t_match or c_match):
+                for term in query_unigrams_pre:
+                    if term in title_lower:
+                        t_match = True
+                    if term in content_lower:
+                        c_match = True
+        
+        if t_match or c_match:
+            filtered.append((node, path, t_match, c_match))
 
     if not filtered:
         return []

@@ -22,17 +22,14 @@ logger = get_logger(__name__)
 
 
 @mcp.tool()
-def ingest_document(filepath: str) -> str:
-    """Ingest a document (PDF, Word, HTML, etc.) or URL and build a searchable index.
-
-    Converts the source to Markdown using MarkItDown, parses it into a
-    hierarchical section tree, and persists the result to the local cache.
+def ingest_document(filepath: str) -> dict[str, Any]:
+    """Ingest a single document into the system from a local file or URL.
 
     Args:
-        filepath: Local file path or URL (http/https) to the document.
+        filepath: Absolute local path or HTTP(S) URL.
 
     Returns:
-        A dictionary with status and the new document ID.
+        Dict with success status, document ID, and other details.
     """
     is_url = filepath.startswith(("http://", "https://"))
     actual_filepath = filepath
@@ -44,7 +41,12 @@ def ingest_document(filepath: str) -> str:
         else:
             actual_filepath = os.path.abspath(filepath)
             if not os.path.exists(actual_filepath):
-                return {"status": "error", "message": f"File not found at {actual_filepath}"}
+                return {"success": False, "data": None, "error": f"File not found at {actual_filepath}", "code": "FILE_NOT_FOUND"}
+            
+            if not settings.ALLOW_EXTERNAL_FILES:
+                raw_dir_abs = os.path.abspath(settings.RAW_DIR)
+                if os.path.commonpath([actual_filepath, raw_dir_abs]) != raw_dir_abs:
+                    return {"success": False, "data": None, "error": "External file ingestion disabled. File must be inside RAW_DIR.", "code": "ACCESS_DENIED"}
 
         result = md_converter.convert(actual_filepath)
         markdown_text = result.text_content
@@ -53,29 +55,28 @@ def ingest_document(filepath: str) -> str:
         filename = os.path.basename(filepath)
         now = datetime.now(timezone.utc).isoformat()
 
-        tree = parse_markdown_to_tree(markdown_text)
-        documents[doc_id] = {
-            "markdown": markdown_text,
+        metadata = {
             "filepath": filepath,
             "filename": filename,
             "ingested_at": now,
             "size_chars": len(markdown_text),
-            "tree": tree,
         }
 
-        save_document(doc_id, {
-            "filepath": filepath,
-            "filename": filename,
-            "ingested_at": now,
-            "size_chars": len(markdown_text),
-        }, markdown_text)
+        cache_path = save_document(doc_id, metadata, markdown_text)
+        tree = parse_markdown_to_tree(markdown_text)
+        documents[doc_id] = {"metadata": metadata, "tree": tree, "content": markdown_text}
 
-        logger.info("Ingested document '%s' as %s", filename, doc_id)
-        return {"status": "success", "document_id": doc_id, "message": "Successfully ingested document."}
+        logger.info("Successfully ingested document '%s' -> ID: %s", metadata["filename"], doc_id)
+        return {
+            "success": True,
+            "data": {"document_id": doc_id, "cache_path": cache_path, "metadata": metadata},
+            "error": None,
+            "code": None
+        }
 
     except Exception as exc:
-        logger.error("Ingestion failed for '%s': %s", filepath, exc)
-        return {"status": "error", "message": f"Error ingesting document: {exc}"}
+        logger.error("Failed to ingest %s: %s", filepath, exc)
+        return {"success": False, "data": None, "error": str(exc), "code": "INGESTION_ERROR"}
     finally:
         if temp_file and os.path.exists(temp_file):
             try:
@@ -180,26 +181,27 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> str:
 
 
 @mcp.tool()
-def ingest_directory(directory_path: str) -> str:
-    """Batch-ingest all supported documents from a local directory.
-
-    Scans for files matching supported extensions and ingests each one.
+def ingest_directory(dir_path: str) -> dict[str, Any]:
+    """Ingest all supported documents in a directory.
 
     Args:
-        directory_path: Absolute path to the target directory.
+        dir_path: Absolute path to the directory.
 
     Returns:
-        A dictionary summarizing the ingestion results.
+        Dict with success status and summary of ingested vs failed files.
     """
-    if not os.path.exists(directory_path):
-        return {"status": "error", "message": f"Directory not found at {directory_path}"}
-    if not os.path.isdir(directory_path):
-        return {"status": "error", "message": f"Path {directory_path} is not a directory."}
+    actual_path = os.path.abspath(dir_path)
+    if not os.path.isdir(actual_path):
+        return {"success": False, "data": None, "error": f"Directory not found: {actual_path}", "code": "DIR_NOT_FOUND"}
 
-    ingested: list[dict] = []
-    failed: list[dict] = []
+    if not settings.ALLOW_EXTERNAL_FILES:
+        raw_dir_abs = os.path.abspath(settings.RAW_DIR)
+        if os.path.commonpath([actual_path, raw_dir_abs]) != raw_dir_abs:
+            return {"success": False, "data": None, "error": "External directory ingestion disabled.", "code": "ACCESS_DENIED"}
 
-    for entry in os.scandir(directory_path):
+    results = {"ingested": [], "failed": []}
+
+    for entry in os.scandir(actual_path):
         if not entry.is_file():
             continue
         ext = os.path.splitext(entry.name)[1].lower()
@@ -207,21 +209,14 @@ def ingest_directory(directory_path: str) -> str:
             continue
 
         res = ingest_document(entry.path)
-        if isinstance(res, dict) and res.get("status") == "success":
-            doc_id = res.get("document_id", "unknown")
-            ingested.append({"filename": entry.name, "filepath": entry.path, "document_id": doc_id})
+        if res.get("success"):
+            results["ingested"].append({"filename": entry.name, "document_id": res["data"]["document_id"]})
         else:
-            failed.append({"filename": entry.name, "error": str(res)})
+            results["failed"].append({"file": entry.name, "error": res.get("error")})
 
-    logger.info("Directory ingestion: %d succeeded, %d failed in %s", len(ingested), len(failed), directory_path)
-    return {
-        "status": "success",
-        "directory_path": directory_path,
-        "successfully_ingested": ingested,
-        "failed_ingested": failed,
-        "total_success": len(ingested),
-        "total_failed": len(failed),
-    }
+    logger.info("Directory ingestion complete. Success: %d, Failed: %d",
+                len(results["ingested"]), len(results["failed"]))
+    return {"success": True, "data": results, "error": None, "code": None}
 
 
 # ── Private Helpers ────────────────────────────────────────────────
@@ -254,15 +249,25 @@ def _download_url(url: str) -> tuple[str, str]:
             if len(content) > max_size:
                 raise ValueError("Download exceeded maximum allowed size (50MB).")
 
-    suffix = ".html"
-    last_part = url.split("/")[-1]
-    if "." in last_part:
-        suffix = "." + last_part.split(".")[-1]
+    # Sanitize suffix
+    suffix = ""
+    basename = os.path.basename(parsed.path)
+    if "." in basename:
+        extracted = "." + basename.split(".")[-1].lower()
+        if extracted in settings.SUPPORTED_EXTENSIONS:
+            suffix = extracted
 
-    temp_dir = os.path.join(settings.RAW_DIR, "temp")
-    os.makedirs(temp_dir, exist_ok=True)
-    temp_file = os.path.join(temp_dir, f"dl_{uuid.uuid4().hex}{suffix}")
-    with open(temp_file, "wb") as f:
+    # Fallback to content-type mapping if missing or invalid
+    if not suffix:
+        if "pdf" in content_type:
+            suffix = ".pdf"
+        elif "html" in content_type:
+            suffix = ".html"
+        else:
+            suffix = ".txt"
+
+    fd, temp_path = tempfile.mkstemp(suffix=suffix)
+    with os.fdopen(fd, "wb") as f:
         f.write(content)
     return temp_file, temp_file
 

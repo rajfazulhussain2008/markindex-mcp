@@ -41,9 +41,9 @@ def get_document_outline(doc_id: str) -> str:
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return {"status": "error", "message": str(exc)}
+        return {"success": False, "data": None, "error": str(exc), "code": "DOC_NOT_FOUND"}
 
-    return {"status": "success", "data": get_outline(doc["tree"])}
+    return {"success": True, "data": get_outline(doc["tree"]), "error": None, "code": None}
 
 
 @mcp.tool()
@@ -52,7 +52,7 @@ def read_section(
     section_title: str,
     start_char: int = 0,
     max_chars: Optional[int] = None,
-) -> str:
+) -> dict[str, Any]:
     """Read the content of a specific section with optional pagination.
 
     Supports exact, partial, and fuzzy title matching.
@@ -64,25 +64,26 @@ def read_section(
         max_chars: Maximum characters to return (None for all).
 
     Returns:
-        Markdown content of the section, with pagination footer if truncated.
+        Dict with success status and markdown content (paginated).
     """
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return str(exc)
+        return {"success": False, "data": None, "error": str(exc), "code": "DOC_NOT_FOUND"}
 
     tree = doc["tree"]
     section_node = find_section(tree, section_title)
 
     if not section_node:
-        return _section_not_found_message(tree, section_title)
+        msg = _section_not_found_message(tree, section_title)
+        return {"success": False, "data": None, "error": msg, "code": "SECTION_NOT_FOUND"}
 
     full_md = section_to_markdown(section_node)
     total_len = len(full_md)
 
     start_char = max(0, start_char)
     if start_char >= total_len:
-        return f"Error: start_char {start_char} exceeds section length {total_len}."
+        return {"success": False, "data": None, "error": f"start_char {start_char} exceeds section length {total_len}.", "code": "OUT_OF_BOUNDS"}
 
     end_char = total_len
     if max_chars is not None and max_chars > 0:
@@ -98,7 +99,7 @@ def read_section(
             f"Use start_char={end_char} to read next page.] ---"
         )
 
-    return page
+    return {"success": True, "data": page, "error": None, "code": None}
 
 
 @mcp.tool()
@@ -116,11 +117,11 @@ def search_sections(doc_id: str, query: str, is_regex: bool = False) -> str:
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return {"status": "error", "message": str(exc)}
+        return {"success": False, "data": None, "error": str(exc), "code": "DOC_NOT_FOUND"}
 
     matches = rank_sections_tfidf(doc["tree"], query, is_regex)
     logger.info("Search '%s' in %s returned %d results", query, doc_id[:8], len(matches))
-    return {"status": "success", "data": matches}
+    return {"success": True, "data": matches, "error": None, "code": None}
 
 
 def _section_not_found_message(tree: list[dict], section_title: str) -> str:

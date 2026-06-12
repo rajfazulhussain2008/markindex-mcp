@@ -66,12 +66,18 @@ How does our MarkIndex methodology compare to traditional Vector Database RAG?
 1. **Hierarchy vs. Chunks:** Traditional Vector RAG chops documents into arbitrary 500-token chunks, destroying the author's intended structure. MarkIndex parses the actual headers (`#`, `Chapter 1`, etc.) to create a navigable tree with stable, unique section IDs.
 2. **Full Context:** When an LLM asks MarkIndex for a section, it gets the *entire* section, exactly as it was written, rather than a few stitched-together vector matches that lack surrounding context.
 3. **No Expensive Embeddings:** Vector RAG requires passing every document through an embedding model (like OpenAI `text-embedding-ada-002`), which costs time and API credits. MarkIndex uses an ultra-fast, local, pure-Python N-Gram TF-IDF engine for advanced multi-word lexical search.
-4. **Token Efficiency:** Vector RAG blindly dumps 5 to 10 disjointed chunks (2,500+ tokens) into the prompt, often filling the context window with irrelevant noise. MarkIndex first feeds the LLM a tiny structural map (`index.md`), and the LLM only fetches the specific, highly-relevant section it needs, drastically reducing token waste and API costs.
-5. **LLM Agency:** With MarkIndex, the LLM acts like a human reader. It can read the Table of Contents, search for keywords, jump to a specific section, and then navigate to the "next" or "previous" sections if it needs more context.
+4. **Stable IDs & Context:** MarkIndex tracks document paths deterministically (`chapter-1-summary-2`) allowing the LLM to easily distinguish between duplicate subheadings. When an LLM asks MarkIndex for a section by ID, it gets the *entire* section.
+5. **Token Efficiency:** Vector RAG blindly dumps 5 to 10 disjointed chunks (2,500+ tokens) into the prompt. MarkIndex feeds the LLM a tiny structural map (`index.md`), and the LLM only fetches the specific, highly-relevant section it needs, drastically reducing token waste and API costs.
+6. **LLM Agency:** With MarkIndex, the LLM acts like a human reader. It can read the Table of Contents, search for keywords, jump to a specific section, and then navigate to the "next" or "previous" sections.
 
----
+### Architecture
 
-## 🏗️ Architecture
+MarkIndex uses a robust "3-Folder Secret System" for enterprise knowledge management:
+- `raw/`: Your original, untouched source documents (PDFs, Word docs, etc.).
+- `wiki/`: The LLM's internal representation, stored as hierarchical Markdown files with JSON frontmatter.
+- `outputs/`: Where the LLM automatically saves the persistent reports and answers it generates for you.
+
+*Note: You can strictly control whether the LLM is allowed to access files outside the `raw/` directory via the `MARKINDEX_ALLOW_EXTERNAL_FILES=true/false` setting.*
 
 ```
 markindex-mcp/
@@ -166,6 +172,7 @@ All settings are managed via environment variables (prefix: `MARKINDEX_`):
 | `MARKINDEX_WIKI_DIR` | `./wiki` | Processed markdown & master index directory |
 | `MARKINDEX_OUTPUTS_DIR` | `./outputs` | AI generated reports directory |
 | `MARKINDEX_LOG_LEVEL` | `INFO` | Log verbosity: DEBUG, INFO, WARNING, ERROR |
+| `MARKINDEX_ALLOW_EXTERNAL_FILES` | `false` | Enable access outside `raw/` directory |
 
 Copy `.env.example` → `.env` and customize as needed.
 
@@ -173,29 +180,21 @@ Copy `.env.example` → `.env` and customize as needed.
 
 ## 📚 Tool Reference
 
-### Ingestion Tools
+### Core Tools
 
-| Tool | Description |
-|---|---|
-| `ingest_document(filepath)` | Ingest a file or URL into the index |
-| `ingest_text(title, text)` | Ingest raw text / markdown directly |
-| `ingest_youtube(url_or_id, interval_seconds)` | Ingest a YouTube video transcript |
-| `ingest_directory(directory_path)` | Batch-ingest all supported files from a directory |
+All tools return a consistent standard dictionary: `{"success": true/false, "data": ..., "error": null, "code": null}`
 
-### Query Tools
+1. **`ingest_document(filepath)`**: Download a URL (with strict size/type safety constraints) or ingest a local file.
+2. **`ingest_directory(dir_path)`**: Recursively ingest a whole folder. 
+3. **`list_documents()`**: View all ingested docs.
+4. **`delete_document(doc_id)`**: Completely purge a document from memory and disk.
 
-| Tool | Description |
-|---|---|
-| `get_document_outline(doc_id)` | Get the hierarchical Table of Contents |
-| `read_section(doc_id, section_title, start_char, max_chars)` | Read a section with pagination |
-| `search_sections(doc_id, query, is_regex)` | TF-IDF ranked search with regex support |
-
-### Navigation Tools
-
-| Tool | Description |
-|---|---|
-| `get_adjacent_sections(doc_id, section_title)` | Get parent / previous / next sections |
-| `summarize_section(doc_id, section_title, num_sentences)` | Extractive summary of a section |
+### LLM Exploration Tools
+1. **`get_document_outline(doc_id)`**: View the document's structure, titles, stable IDs, and sizes.
+2. **`search_sections(doc_id, query)`**: Find specific keywords or regex patterns using the built-in N-Gram TF-IDF engine.
+3. **`read_section(doc_id, section_id)`**: Fetch the full markdown content of a section.
+4. **`get_adjacent_sections(doc_id, section_id)`**: Read the parent, previous, or next section.
+5. **`summarize_section(doc_id, section_id)`**: Generate an extractive summary of a huge section without filling up the context window.
 
 ### Management Tools
 
@@ -203,7 +202,7 @@ Copy `.env.example` → `.env` and customize as needed.
 |---|---|
 | `list_documents()` | List all ingested documents |
 | `delete_document(doc_id)` | Delete a document from index and cache |
-| `save_to_outputs(filename, content)` | **[NEW]** Save AI-generated reports to the `outputs/` folder |
+| `save_to_outputs(filename, content)` | Save AI-generated reports to the `outputs/` folder |
 
 ---
 

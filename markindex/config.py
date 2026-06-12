@@ -21,9 +21,9 @@ class Settings:
         SUPPORTED_EXTENSIONS: File extensions accepted by the directory ingestion tool.
     """
 
-    RAW_DIR: str = field(default_factory=lambda: os.environ.get(
-        "MARKINDEX_RAW_DIR",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "raw")
+    DATA_DIR: str = field(default_factory=lambda: os.environ.get(
+        "MARKINDEX_DATA_DIR",
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
     ))
     WIKI_DIR: str = field(default_factory=lambda: os.environ.get(
         "MARKINDEX_WIKI_DIR",
@@ -33,6 +33,13 @@ class Settings:
         "MARKINDEX_OUTPUTS_DIR",
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs")
     ))
+    RAW_DIR: str = field(default_factory=lambda: os.environ.get(
+        "MARKINDEX_RAW_DIR",
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "raw")
+    ))
+    ALLOW_EXTERNAL_FILES: bool = field(default_factory=lambda: os.environ.get(
+        "MARKINDEX_ALLOW_EXTERNAL_FILES", "false"
+    ).lower() == "true")
     LOG_LEVEL: str = field(default_factory=lambda: os.environ.get("MARKINDEX_LOG_LEVEL", "INFO"))
     MAX_SEARCH_RESULTS: int = 50
     DEFAULT_SUMMARY_SENTENCES: int = 5
@@ -44,9 +51,10 @@ class Settings:
 
     def __post_init__(self) -> None:
         """Ensure the workspace directories exist on initialization."""
-        os.makedirs(self.RAW_DIR, exist_ok=True)
+        os.makedirs(self.DATA_DIR, exist_ok=True)
         os.makedirs(self.WIKI_DIR, exist_ok=True)
         os.makedirs(self.OUTPUTS_DIR, exist_ok=True)
+        os.makedirs(self.RAW_DIR, exist_ok=True)
 
 
 settings = Settings()

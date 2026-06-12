@@ -4,6 +4,7 @@ Handles serialization and deserialization of documents using Markdown files
 with YAML-style frontmatter headers for metadata.
 """
 
+import json
 import os
 from typing import Any
 
@@ -14,7 +15,7 @@ logger = get_logger(__name__)
 
 
 def parse_frontmatter(file_content: str) -> tuple[dict[str, Any], str]:
-    """Parse a markdown file with YAML-style frontmatter.
+    """Parse a markdown file with JSON frontmatter.
 
     Args:
         file_content: Raw file content string.
@@ -29,10 +30,10 @@ def parse_frontmatter(file_content: str) -> tuple[dict[str, Any], str]:
     if file_content.startswith("---"):
         parts = file_content.split("---", 2)
         if len(parts) >= 3:
-            for line in parts[1].strip().split("\n"):
-                if ":" in line:
-                    k, v = line.split(":", 1)
-                    metadata[k.strip()] = v.strip()
+            try:
+                metadata = json.loads(parts[1].strip())
+            except json.JSONDecodeError:
+                pass
             markdown_content = parts[2].lstrip()
 
     if "size_chars" in metadata:
@@ -45,7 +46,7 @@ def parse_frontmatter(file_content: str) -> tuple[dict[str, Any], str]:
 
 
 def serialize_frontmatter(metadata: dict[str, Any], markdown_content: str) -> str:
-    """Serialize metadata and content into a markdown file with frontmatter.
+    """Serialize metadata and content into a markdown file with JSON frontmatter.
 
     Args:
         metadata: Key-value metadata pairs.
@@ -54,10 +55,11 @@ def serialize_frontmatter(metadata: dict[str, Any], markdown_content: str) -> st
     Returns:
         Complete file content string with frontmatter header.
     """
-    lines = ["---"]
-    for k, v in metadata.items():
-        lines.append(f"{k}: {v}")
-    lines.append("---")
+    lines = [
+        "---",
+        json.dumps(metadata, indent=2),
+        "---"
+    ]
     return "\n".join(lines) + "\n\n" + markdown_content.strip()
 
 

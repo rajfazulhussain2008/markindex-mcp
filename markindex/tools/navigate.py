@@ -4,6 +4,8 @@ Provides tools for traversing the document tree using sibling and
 parent navigation, reading sections, and generating extractive summaries.
 """
 
+from typing import Any
+
 from markindex.core.parser import find_section, get_flat_navigation_map, section_to_markdown
 from markindex.core.summarizer import summarize_text
 from markindex.exceptions import DocumentNotFoundError
@@ -20,7 +22,7 @@ def _require_document(doc_id: str) -> dict:
 
 
 @mcp.tool()
-def get_adjacent_sections(doc_id: str, section_title: str) -> dict:
+def get_adjacent_sections(doc_id: str, section_title: str) -> dict[str, Any]:
     """Retrieve navigation context for a section.
 
     Returns the parent, previous, and next sections relative to
@@ -36,47 +38,24 @@ def get_adjacent_sections(doc_id: str, section_title: str) -> dict:
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return {"status": "error", "message": str(exc)}
+        return {"success": False, "data": None, "error": str(exc), "code": "DOC_NOT_FOUND"}
 
     tree = doc["tree"]
     section_node = find_section(tree, section_title)
     if not section_node:
-        return {"status": "error", "message": f"Section '{section_title}' not found."}
+        return {"success": False, "data": None, "error": f"Section '{section_title}' not found.", "code": "SECTION_NOT_FOUND"}
 
     nav_map = get_flat_navigation_map(tree)
     node_id = section_node["id"]
 
     if node_id not in nav_map:
-        return {"status": "error", "message": f"Navigation mapping failed for '{node_id}'."}
+        return {"success": False, "data": None, "error": f"Navigation mapping failed for '{node_id}'.", "code": "MAP_FAILED"}
 
-    return {"status": "success", "data": nav_map[node_id]}
-
-
-@mcp.tool()
-def read_section(doc_id: str, section_title: str) -> dict:
-    """Read the full content of a specific document section.
-
-    Args:
-        doc_id: The document ID.
-        section_title: Title or ID of the section to read.
-
-    Returns:
-        Dict with status and markdown content.
-    """
-    try:
-        doc = _require_document(doc_id)
-    except DocumentNotFoundError as exc:
-        return {"status": "error", "message": str(exc)}
-
-    section_node = find_section(doc["tree"], section_title)
-    if not section_node:
-        return {"status": "error", "message": f"Section '{section_title}' not found."}
-
-    return {"status": "success", "data": section_to_markdown(section_node)}
+    return {"success": True, "data": nav_map[node_id], "error": None, "code": None}
 
 
 @mcp.tool()
-def summarize_section(doc_id: str, section_title: str, num_sentences: int = 5) -> dict:
+def summarize_section(doc_id: str, section_title: str, num_sentences: int = 5) -> dict[str, Any]:
     """Generate an extractive summary of a document section.
 
     Uses term-frequency scoring to select the most informative sentences.
@@ -92,16 +71,16 @@ def summarize_section(doc_id: str, section_title: str, num_sentences: int = 5) -
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return {"status": "error", "message": str(exc)}
+        return {"success": False, "data": None, "error": str(exc), "code": "DOC_NOT_FOUND"}
 
     tree = doc["tree"]
     section_node = find_section(tree, section_title)
     if not section_node:
-        return {"status": "error", "message": f"Section '{section_title}' not found."}
+        return {"success": False, "data": None, "error": f"Section '{section_title}' not found.", "code": "SECTION_NOT_FOUND"}
 
     content = section_node["content"]
     if not content.strip():
-        return {"status": "error", "message": f"Section '{section_node['title']}' has no direct content. It only contains sub-sections."}
+        return {"success": False, "data": None, "error": f"Section '{section_node['title']}' has no direct content. It only contains sub-sections.", "code": "NO_CONTENT"}
 
     summary = summarize_text(content, num_sentences)
-    return {"status": "success", "data": f"### Summary of: {section_node['title']}\n\n{summary}"}
+    return {"success": True, "data": f"### Summary of: {section_node['title']}\n\n{summary}", "error": None, "code": None}
