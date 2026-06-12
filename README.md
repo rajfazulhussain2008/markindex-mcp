@@ -184,6 +184,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 <div align="center">
 
-**Built with ❤️ by MarkIndex Team**
+**Built with ❤️ by Rajmohamed H**
 
 </div>
