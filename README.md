@@ -33,6 +33,23 @@ Built on [Microsoft MarkItDown](https://github.com/microsoft/markitdown) for uni
 
 ---
 
+## ⚖️ Vector RAG vs. Page Index RAG (MarkIndex)
+
+How does our MarkIndex methodology compare to traditional Vector Database RAG?
+
+| Feature | Vector RAG | MarkIndex RAG |
+|---|:---:|:---:|
+| **Context Preservation** | 4/10 | **10/10** |
+| **Setup Complexity** | 3/10 | **9/10** |
+| **Cost to Run** | 5/10 | **10/10** |
+| **Sequential Reading** | 2/10 | **10/10** |
+| **Fuzzy Semantic Match** | **9/10** | 6/10 |
+| **Total Score** | 23/50 | **45/50** |
+
+*MarkIndex excels by preserving the original document hierarchy and allowing the LLM to paginate through full, unbroken sections, rather than receiving fragmented, out-of-context vector chunks.*
+
+---
+
 ## 🏗️ Architecture
 
 ```
