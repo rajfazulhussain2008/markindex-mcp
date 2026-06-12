@@ -45,7 +45,7 @@ By implementing this architecture, you essentially build a self-updating, person
 
 ---
 
-## ⚖️ Vector RAG vs. Page Index RAG (MarkIndex)
+## ⚖️ Vector RAG vs. MarkIndex
 
 How does our MarkIndex methodology compare to traditional Vector Database RAG?
 
