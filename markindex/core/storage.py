@@ -118,7 +118,7 @@ def load_all_documents() -> dict[str, tuple[dict[str, Any], str]]:
         doc_id = filename[:-3]
         filepath = os.path.join(settings.WIKI_DIR, filename)
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 content = f.read()
             metadata, markdown = parse_frontmatter(content)
             documents[doc_id] = (metadata, markdown)
@@ -146,7 +146,7 @@ def _generate_wiki_index() -> None:
         
         filepath = os.path.join(settings.WIKI_DIR, filename)
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 content = f.read()
             metadata, _ = parse_frontmatter(content)
             title = metadata.get("filename", filename)

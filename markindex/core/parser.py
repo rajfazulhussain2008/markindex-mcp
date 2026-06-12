@@ -5,8 +5,8 @@ multiple header formats: standard Markdown (#), SECTION, CHAPTER, APPENDIX,
 numbered (1.1, 1.2.3), Roman numerals (I., II.), and time intervals (00:00 - 02:00).
 """
 
-import re
 import difflib
+import re
 from typing import Any
 
 from markindex.logger import get_logger

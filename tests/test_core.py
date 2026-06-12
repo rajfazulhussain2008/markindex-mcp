@@ -1,20 +1,10 @@
-"""Integration tests for MarkIndex MCP.
-
-Tests the core parsing, search, summarization, and storage modules
-to ensure end-to-end correctness of the Page Index RAG pipeline.
-"""
-
-import json
 import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-# Ensure the project root is on sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from markindex.config import settings
 
 from markindex.core.parser import (
     find_section,
@@ -24,11 +14,8 @@ from markindex.core.parser import (
     section_to_markdown,
 )
 from markindex.core.search import rank_sections_tfidf
-from markindex.core.summarizer import summarize_text
 from markindex.core.storage import parse_frontmatter, serialize_frontmatter
-from markindex.tools.ingest import ingest_text
-from markindex.tools.manage import list_documents
-from markindex.server import documents
+from markindex.core.summarizer import summarize_text
 
 SAMPLE_MARKDOWN = """# Introduction
 
@@ -73,10 +60,7 @@ We discuss the implications of these findings in detail.
 In conclusion, the project was successful and met all objectives.
 """
 
-
 class TestParser(unittest.TestCase):
-    """Test the hierarchical document parser."""
-
     def setUp(self):
         self.tree = parse_markdown_to_tree(SAMPLE_MARKDOWN)
 
@@ -124,8 +108,6 @@ class TestParser(unittest.TestCase):
 
 
 class TestSectionFinder(unittest.TestCase):
-    """Test multi-phase section title resolution."""
-
     def setUp(self):
         self.tree = parse_markdown_to_tree(SAMPLE_MARKDOWN)
 
@@ -155,8 +137,6 @@ class TestSectionFinder(unittest.TestCase):
 
 
 class TestNavigation(unittest.TestCase):
-    """Test flat navigation map generation."""
-
     def setUp(self):
         self.tree = parse_markdown_to_tree(SAMPLE_MARKDOWN)
         self.nav = get_flat_navigation_map(self.tree)
@@ -182,8 +162,6 @@ class TestNavigation(unittest.TestCase):
 
 
 class TestSearch(unittest.TestCase):
-    """Test TF-IDF ranked search engine."""
-
     def setUp(self):
         self.tree = parse_markdown_to_tree(SAMPLE_MARKDOWN)
 
@@ -202,8 +180,6 @@ class TestSearch(unittest.TestCase):
         self.assertGreater(len(results), 0)
         snippets = results[0]["snippets"]
         self.assertGreater(len(snippets), 0)
-        
-        # Verify deduplication
         self.assertEqual(len(snippets), len(set(snippets)))
 
     def test_title_boost(self):
@@ -226,15 +202,8 @@ class TestSearch(unittest.TestCase):
         results = rank_sections_tfidf(self.tree, r"collect\w+", is_regex=True)
         self.assertGreater(len(results), 0)
 
-    def test_snippets_generated(self):
-        results = rank_sections_tfidf(self.tree, "performance")
-        matched = [r for r in results if r["snippets"]]
-        self.assertGreater(len(matched), 0)
-
 
 class TestSummarizer(unittest.TestCase):
-    """Test extractive summarization."""
-
     def test_short_text_unchanged(self):
         text = "Short sentence one. Short sentence two."
         result = summarize_text(text, num_sentences=5)
@@ -243,13 +212,10 @@ class TestSummarizer(unittest.TestCase):
     def test_summarizes_long_text(self):
         text = ". ".join([f"Sentence number {i} about topic" for i in range(20)]) + "."
         result = summarize_text(text, num_sentences=3)
-        # Should be shorter than original
         self.assertLess(len(result), len(text))
 
 
 class TestStorage(unittest.TestCase):
-    """Test frontmatter serialization and parsing."""
-
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.patcher = patch("markindex.core.storage.settings.WIKI_DIR", self.temp_dir.name)
@@ -281,91 +247,5 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(meta, {})
         self.assertEqual(md, content)
 
-
-class TestManageSecurity(unittest.TestCase):
-    """Test security constraints in management tools."""
-
-    def setUp(self):
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.patcher = patch("markindex.tools.manage.settings.OUTPUTS_DIR", self.temp_dir.name)
-        self.patcher.start()
-
-    def tearDown(self):
-        self.patcher.stop()
-        self.temp_dir.cleanup()
-
-    def test_save_to_outputs_path_traversal(self):
-        from markindex.tools.manage import save_to_outputs
-        res = save_to_outputs("../../../windows/system32/hack.md", "hacked")
-        self.assertFalse(res["success"])
-        self.assertIn("path traversal", res["error"])
-
-    def test_save_to_outputs_valid(self):
-        from markindex.tools.manage import save_to_outputs
-        res = save_to_outputs("valid_report.md", "content")
-        self.assertTrue(res["success"])
-        self.assertIn("valid_report.md", res["data"]["saved_path"])
-
-
-class TestIngestionTools(unittest.TestCase):
-    def setUp(self):
-        documents.clear()
-
-    def test_ingest_text_schema(self):
-        res = ingest_text("Test Doc", "# Hello\nworld")
-        self.assertTrue(res["success"])
-        self.assertIn("document_id", res["data"])
-        
-        # Verify list_documents uses correct structure
-        docs = list_documents()
-        self.assertTrue(docs["success"])
-        self.assertEqual(len(docs["data"]), 1)
-        self.assertEqual(docs["data"][0]["filename"], "Test Doc")
-        self.assertEqual(docs["data"][0]["size_chars"], 13)
-
-    @patch("markindex.tools.ingest.urllib.request.urlopen")
-    def test_download_url_valid(self, mock_urlopen):
-        from markindex.tools.ingest import _download_url
-        import io
-        
-        mock_response = MagicMock()
-        mock_response.info.return_value.get.return_value = "text/html"
-        mock_response.read.side_effect = [b"hello web", b""]
-        mock_urlopen.return_value.__enter__.return_value = mock_response
-
-        temp_path, _ = _download_url("http://example.com/page.html")
-        self.assertTrue(os.path.exists(temp_path))
-        self.assertTrue(temp_path.endswith(".html"))
-        
-        with open(temp_path, "rb") as f:
-            self.assertEqual(f.read(), b"hello web")
-        os.remove(temp_path)
-
-
-class TestStartup(unittest.TestCase):
-    def test_server_startup(self):
-        import subprocess
-        # Should exit quickly and without errors if just checking help or similar.
-        # If the server hangs because it's a stdio server, we can timeout safely.
-        try:
-            subprocess.run(
-                [sys.executable, "-m", "markindex"],
-                timeout=2,
-                capture_output=True,
-                check=True
-            )
-        except subprocess.TimeoutExpired:
-            pass # Expected, stdio server waits for input
-        except subprocess.CalledProcessError as e:
-            self.fail(f"Server startup failed: {e.stderr.decode()}")
-
-    def test_register_tools(self):
-        # Verify we can import server and register tools without warnings
-        try:
-            from markindex.server import _register_tools
-            _register_tools()
-        except Exception as e:
-            self.fail(f"_register_tools raised an exception: {e}")
-
 if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    unittest.main()

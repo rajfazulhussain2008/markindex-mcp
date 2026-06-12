@@ -8,8 +8,8 @@ This module is the central hub that:
 5. Provides the ``main()`` entry point.
 """
 
-from mcp.server.fastmcp import FastMCP
 from markitdown import MarkItDown
+from mcp.server.fastmcp import FastMCP
 
 from markindex.config import settings
 from markindex.core.parser import parse_markdown_to_tree
@@ -44,10 +44,10 @@ def _load_cache() -> None:
 
 def _register_tools() -> None:
     """Import tool modules to register their @mcp.tool() functions."""
-    import markindex.tools.ingest    # noqa: F401
-    import markindex.tools.query     # noqa: F401
+    import markindex.tools.ingest  # noqa: F401
+    import markindex.tools.manage  # noqa: F401
     import markindex.tools.navigate  # noqa: F401
-    import markindex.tools.manage    # noqa: F401
+    import markindex.tools.query  # noqa: F401
     logger.debug("All tool modules registered")
 
 

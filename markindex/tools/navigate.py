@@ -4,13 +4,13 @@ Provides tools for traversing the document tree using sibling and
 parent navigation, reading sections, and generating extractive summaries.
 """
 
-from typing import Any
 
 from markindex.core.parser import find_section, get_flat_navigation_map, section_to_markdown
 from markindex.core.summarizer import summarize_text
 from markindex.exceptions import DocumentNotFoundError
 from markindex.logger import get_logger
-from markindex.server import mcp, documents
+from markindex.models import ToolResponse, err, ok
+from markindex.server import documents, mcp
 
 logger = get_logger(__name__)
 
@@ -22,7 +22,7 @@ def _require_document(doc_id: str) -> dict:
 
 
 @mcp.tool()
-def get_adjacent_sections(doc_id: str, section_title: str) -> dict[str, Any]:
+def get_adjacent_sections(doc_id: str, section_title: str) -> ToolResponse:
     """Retrieve navigation context for a section.
 
     Returns the parent, previous, and next sections relative to
@@ -30,7 +30,7 @@ def get_adjacent_sections(doc_id: str, section_title: str) -> dict[str, Any]:
 
     Args:
         doc_id: The document ID.
-        section_title: Title or ID of the section to navigate from.
+        section_title: Section title, full path, or section ID.
 
     Returns:
         Dict with status and data containing navigation context.
@@ -38,49 +38,54 @@ def get_adjacent_sections(doc_id: str, section_title: str) -> dict[str, Any]:
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return {"success": False, "data": None, "error": str(exc), "code": "DOC_NOT_FOUND"}
+        return err(str(exc), "DOC_NOT_FOUND")
 
     tree = doc["tree"]
     section_node = find_section(tree, section_title)
     if not section_node:
-        return {"success": False, "data": None, "error": f"Section '{section_title}' not found.", "code": "SECTION_NOT_FOUND"}
+        return err(f"Section '{section_title}' not found.", "SECTION_NOT_FOUND")
 
     nav_map = get_flat_navigation_map(tree)
     node_id = section_node["id"]
 
     if node_id not in nav_map:
-        return {"success": False, "data": None, "error": f"Navigation mapping failed for '{node_id}'.", "code": "MAP_FAILED"}
+        return err(f"Navigation mapping failed for '{node_id}'.", "MAP_FAILED")
 
-    return {"success": True, "data": nav_map[node_id], "error": None, "code": None}
+    return ok(nav_map[node_id])
 
 
 @mcp.tool()
-def summarize_section(doc_id: str, section_title: str, num_sentences: int = 5) -> dict[str, Any]:
+def summarize_section(doc_id: str, section_title: str, num_sentences: int = 5) -> ToolResponse:
     """Generate an extractive summary of a document section.
 
     Uses term-frequency scoring to select the most informative sentences.
 
     Args:
         doc_id: The document ID.
-        section_title: Title or ID of the section to summarize.
-        num_sentences: Number of sentences to extract.
+        section_title: Section title, full path, or section ID.
+        num_sentences: Number of sentences to include in the summary.
 
     Returns:
-        Dict with status and markdown-formatted summary.
+        Dict with status and the summary text.
     """
     try:
         doc = _require_document(doc_id)
     except DocumentNotFoundError as exc:
-        return {"success": False, "data": None, "error": str(exc), "code": "DOC_NOT_FOUND"}
+        return err(str(exc), "DOC_NOT_FOUND")
 
     tree = doc["tree"]
     section_node = find_section(tree, section_title)
     if not section_node:
-        return {"success": False, "data": None, "error": f"Section '{section_title}' not found.", "code": "SECTION_NOT_FOUND"}
+        return err(f"Section '{section_title}' not found.", "SECTION_NOT_FOUND")
 
-    content = section_node["content"]
-    if not content.strip():
-        return {"success": False, "data": None, "error": f"Section '{section_node['title']}' has no direct content. It only contains sub-sections.", "code": "NO_CONTENT"}
+    markdown_content = section_to_markdown(section_node)
+    
+    if len(markdown_content) < 500:
+        return ok({"summary": markdown_content, "note": "Section is already short."})
 
-    summary = summarize_text(content, num_sentences)
-    return {"success": True, "data": f"### Summary of: {section_node['title']}\n\n{summary}", "error": None, "code": None}
+    try:
+        summary = summarize_text(markdown_content, num_sentences)
+        return ok({"summary": summary})
+    except Exception as exc:
+        logger.error("Summarization failed for %s: %s", section_title, exc)
+        return err(f"Summarization failed: {exc}", "SUMMARY_FAILED")

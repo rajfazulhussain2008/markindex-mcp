@@ -4,19 +4,19 @@ Provides tools for listing and deleting ingested documents.
 """
 
 import os
-from typing import Any
+from datetime import UTC
 
 from markindex.config import settings
 from markindex.core.storage import delete_document_file
-from markindex.exceptions import DocumentNotFoundError
 from markindex.logger import get_logger
-from markindex.server import mcp, documents
+from markindex.models import ToolResponse, err, ok
+from markindex.server import documents, mcp
 
 logger = get_logger(__name__)
 
 
 @mcp.tool()
-def list_documents() -> dict[str, Any]:
+def list_documents() -> ToolResponse:
     """List all ingested documents currently available in the index.
 
     Returns:
@@ -34,11 +34,11 @@ def list_documents() -> dict[str, Any]:
         })
 
     logger.debug("list_documents returned %d items", len(result))
-    return {"success": True, "data": result, "error": None, "code": None}
+    return ok(result)
 
 
 @mcp.tool()
-def delete_document(doc_id: str) -> dict[str, Any]:
+def delete_document(doc_id: str) -> ToolResponse:
     """Delete a document from the index and remove its cache file.
 
     Args:
@@ -49,26 +49,23 @@ def delete_document(doc_id: str) -> dict[str, Any]:
     """
     doc = documents.get(doc_id)
     if not doc:
-        return {"success": False, "data": None, "error": f"Document ID '{doc_id}' not found in index.", "code": "DOC_NOT_FOUND"}
+        return err(f"Document ID '{doc_id}' not found in index.", "DOC_NOT_FOUND")
 
-    deleted_mem = False
     if doc_id in documents:
         del documents[doc_id]
-        deleted_mem = True
 
-    deleted_disk = False
     try:
-        deleted_disk = delete_document_file(doc_id)
+        delete_document_file(doc_id)
     except Exception as exc:
         logger.error("Failed to delete cache file for %s: %s", doc_id, exc)
-        return {"success": False, "data": None, "error": f"Error deleting cache file: {exc}", "code": "DELETE_ERROR"}
+        return err(f"Error deleting cache file: {exc}", "DELETE_ERROR")
 
     logger.info("Deleted document '%s'", doc_id)
-    return {"success": True, "data": {"deleted_id": doc_id, "filename": doc.get("filename")}, "error": None, "code": None}
+    return ok({"deleted_id": doc_id, "filename": doc.get("filename")})
 
 
 @mcp.tool()
-def save_to_outputs(filename: str, content: str) -> dict[str, Any]:
+def save_to_outputs(filename: str, content: str) -> ToolResponse:
     """Save an AI-generated report or content to the outputs/ folder.
 
     This tool permanently persists generated knowledge into the 3-folder system.
@@ -84,23 +81,39 @@ def save_to_outputs(filename: str, content: str) -> dict[str, Any]:
         filename += ".md"
         
     if os.path.basename(filename) != filename:
-        return {"success": False, "data": None, "error": "Invalid filename path traversal detected.", "code": "PATH_TRAVERSAL"}
+        return err("Invalid filename path traversal detected.", "PATH_TRAVERSAL")
 
     safe_filename = "".join(c for c in filename if c.isalnum() or c in " ._-").strip()
     if not safe_filename:
-        return {"success": False, "data": None, "error": "Filename contains only invalid characters.", "code": "INVALID_FILENAME"}
+        return err("Filename contains only invalid characters.", "INVALID_FILENAME")
         
-    out_path = os.path.abspath(os.path.join(settings.OUTPUTS_DIR, safe_filename))
-    outputs_dir_abs = os.path.abspath(settings.OUTPUTS_DIR)
+    out_path = os.path.realpath(os.path.join(settings.OUTPUTS_DIR, safe_filename))
+    outputs_dir_abs = os.path.realpath(settings.OUTPUTS_DIR)
     
-    if not out_path.startswith(outputs_dir_abs):
-        return {"success": False, "data": None, "error": "Invalid filename path traversal detected.", "code": "PATH_TRAVERSAL"}
+    if os.path.commonpath([out_path, outputs_dir_abs]) != outputs_dir_abs:
+        return err("Invalid filename path traversal detected.", "PATH_TRAVERSAL")
     
     try:
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(content)
         logger.info("Saved generated output to %s", out_path)
-        return {"success": True, "data": {"saved_path": out_path}, "error": None, "code": None}
+        return ok({"saved_path": out_path})
     except Exception as exc:
         logger.error("Failed to save output: %s", exc)
-        return {"success": False, "data": None, "error": f"Error saving output: {exc}", "code": "SAVE_ERROR"}
+        return err(f"Error saving output: {exc}", "SAVE_ERROR")
+
+@mcp.tool()
+def get_server_status() -> ToolResponse:
+    """Get the current health, status, and memory stats of the MarkIndex MCP server.
+
+    Returns:
+        Dict with version, uptime info, and memory index statistics.
+    """
+    from datetime import datetime
+    return ok({
+        "version": "2.0.0",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "documents_indexed": len(documents),
+        "total_size_chars": sum(doc.get("size_chars", 0) for doc in documents.values()),
+        "status": "online"
+    })

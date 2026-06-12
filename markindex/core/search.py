@@ -6,7 +6,6 @@ using a pure-Python TF-IDF implementation with optional regex support.
 
 import math
 import re
-from typing import Any
 
 from markindex.logger import get_logger
 
@@ -14,15 +13,13 @@ logger = get_logger(__name__)
 
 
 def tokenize(text: str) -> list[str]:
-    """Tokenize text into lowercase alphanumeric words.
-
-    Args:
-        text: Input text to tokenize.
-
-    Returns:
-        List of lowercase word tokens.
-    """
-    return re.findall(r"\b\w+\b", text.lower())
+    """Tokenize text into lowercase alphanumeric words."""
+    tokens = re.findall(r"\b\w+\b", text.lower())
+    stopwords = {
+        "the", "and", "is", "in", "it", "of", "to", "a", "an", "for",
+        "on", "with", "as", "by", "this", "that", "are", "at", "be"
+    }
+    return [t for t in tokens if t not in stopwords]
 
 
 def get_ngrams(tokens: list[str], n: int) -> list[str]:
@@ -103,8 +100,7 @@ def rank_sections_tfidf(
 
     corpus_unigrams = []
     corpus_bigrams = []
-    filtered_indices = []
-    for i, (node, _) in enumerate(all_nodes):
+    for _i, (node, _) in enumerate(all_nodes):
         unigrams = tokenize(f"{node['title']} {node['content']}")
         corpus_unigrams.append(unigrams)
         corpus_bigrams.append(get_ngrams(unigrams, 2))
@@ -113,7 +109,7 @@ def rank_sections_tfidf(
     df = {}
     for term in query_terms:
         count = 0
-        for u, b in zip(corpus_unigrams, corpus_bigrams):
+        for u, b in zip(corpus_unigrams, corpus_bigrams, strict=False):
             if " " in term:
                 if term in b: count += 1
             else:

@@ -7,23 +7,23 @@ YouTube transcripts, and entire directories.
 import os
 import re
 import tempfile
-import uuid
-import urllib.request
 import urllib.parse
-from datetime import datetime, timezone
-from typing import Optional, Any
+import urllib.request
+import uuid
+from datetime import UTC, datetime
 
 from markindex.config import settings
 from markindex.core.parser import parse_markdown_to_tree
 from markindex.core.storage import save_document
 from markindex.logger import get_logger
-from markindex.server import mcp, md_converter, documents
+from markindex.models import ToolResponse, err, ok
+from markindex.server import documents, mcp, md_converter
 
 logger = get_logger(__name__)
 
 
 @mcp.tool()
-def ingest_document(filepath: str) -> dict[str, Any]:
+def ingest_document(filepath: str) -> ToolResponse:
     """Ingest a single document into the system from a local file or URL.
 
     Args:
@@ -34,27 +34,27 @@ def ingest_document(filepath: str) -> dict[str, Any]:
     """
     is_url = filepath.startswith(("http://", "https://"))
     actual_filepath = filepath
-    temp_file: Optional[str] = None
+    temp_file: str | None = None
 
     try:
         if is_url:
             actual_filepath, temp_file = _download_url(filepath)
         else:
-            actual_filepath = os.path.abspath(filepath)
+            actual_filepath = os.path.realpath(filepath)
             if not os.path.exists(actual_filepath):
-                return {"success": False, "data": None, "error": f"File not found at {actual_filepath}", "code": "FILE_NOT_FOUND"}
+                return err(f"File not found at {actual_filepath}", "FILE_NOT_FOUND")
             
             if not settings.ALLOW_EXTERNAL_FILES:
-                raw_dir_abs = os.path.abspath(settings.RAW_DIR)
+                raw_dir_abs = os.path.realpath(settings.RAW_DIR)
                 if os.path.commonpath([actual_filepath, raw_dir_abs]) != raw_dir_abs:
-                    return {"success": False, "data": None, "error": "External file ingestion disabled. File must be inside RAW_DIR.", "code": "ACCESS_DENIED"}
+                    return err("External file ingestion disabled. File must be inside RAW_DIR.", "ACCESS_DENIED")
 
         result = md_converter.convert(actual_filepath)
         markdown_text = result.text_content
 
         doc_id = str(uuid.uuid4())
         filename = os.path.basename(filepath)
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         metadata = {
             "filepath": filepath,
@@ -77,16 +77,11 @@ def ingest_document(filepath: str) -> dict[str, Any]:
         }
 
         logger.info("Successfully ingested document '%s' -> ID: %s", metadata["filename"], doc_id)
-        return {
-            "success": True,
-            "data": {"document_id": doc_id, "cache_path": cache_path, "metadata": metadata},
-            "error": None,
-            "code": None
-        }
+        return ok({"document_id": doc_id, "cache_path": cache_path, "metadata": metadata})
 
     except Exception as exc:
         logger.error("Failed to ingest %s: %s", filepath, exc)
-        return {"success": False, "data": None, "error": str(exc), "code": "INGESTION_ERROR"}
+        return err(str(exc), "INGESTION_ERROR")
     finally:
         if temp_file and os.path.exists(temp_file):
             try:
@@ -96,7 +91,7 @@ def ingest_document(filepath: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def ingest_text(title: str, text: str) -> dict[str, Any]:
+def ingest_text(title: str, text: str) -> ToolResponse:
     """Ingest raw text or markdown directly into the index.
 
     Args:
@@ -108,7 +103,7 @@ def ingest_text(title: str, text: str) -> dict[str, Any]:
     """
     try:
         doc_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         tree = parse_markdown_to_tree(text)
 
         metadata = {
@@ -131,20 +126,15 @@ def ingest_text(title: str, text: str) -> dict[str, Any]:
         cache_path = save_document(doc_id, metadata, text)
 
         logger.info("Ingested text document '%s' as %s", title, doc_id)
-        return {
-            "success": True,
-            "data": {"document_id": doc_id, "cache_path": cache_path, "metadata": metadata},
-            "error": None,
-            "code": None
-        }
+        return ok({"document_id": doc_id, "cache_path": cache_path, "metadata": metadata})
 
     except Exception as exc:
         logger.error("Text ingestion failed: %s", exc)
-        return {"success": False, "data": None, "error": str(exc), "code": "INGESTION_ERROR"}
+        return err(str(exc), "INGESTION_ERROR")
 
 
 @mcp.tool()
-def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> dict[str, Any]:
+def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> ToolResponse:
     """Ingest a YouTube video transcript into the index.
 
     Downloads the transcript using youtube-transcript-api, formats it into
@@ -159,7 +149,7 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> dict[str, Any
     """
     video_id = _extract_youtube_id(url_or_id)
     if not video_id:
-        return {"success": False, "data": None, "error": "Could not extract valid YouTube video ID.", "code": "INVALID_YOUTUBE_ID"}
+        return err("Could not extract valid YouTube video ID.", "INVALID_YOUTUBE_ID")
 
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
@@ -170,7 +160,7 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> dict[str, Any
         markdown_text = _format_transcript(video_title, transcript, interval_seconds)
 
         doc_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         tree = parse_markdown_to_tree(markdown_text)
 
         yt_url = f"https://youtube.com/watch?v={video_id}"
@@ -194,20 +184,15 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> dict[str, Any
         cache_path = save_document(doc_id, metadata, markdown_text)
 
         logger.info("Ingested YouTube transcript for '%s' as %s", video_title, doc_id)
-        return {
-            "success": True,
-            "data": {"document_id": doc_id, "cache_path": cache_path, "metadata": metadata},
-            "error": None,
-            "code": None
-        }
+        return ok({"document_id": doc_id, "cache_path": cache_path, "metadata": metadata})
 
     except Exception as exc:
         logger.error("YouTube ingestion failed: %s", exc)
-        return {"success": False, "data": None, "error": str(exc), "code": "YOUTUBE_ERROR"}
+        return err(str(exc), "YOUTUBE_ERROR")
 
 
 @mcp.tool()
-def ingest_directory(dir_path: str) -> dict[str, Any]:
+def ingest_directory(dir_path: str) -> ToolResponse:
     """Ingest all supported documents in a directory.
 
     Args:
@@ -216,14 +201,14 @@ def ingest_directory(dir_path: str) -> dict[str, Any]:
     Returns:
         Dict with success status and summary of ingested vs failed files.
     """
-    actual_path = os.path.abspath(dir_path)
+    actual_path = os.path.realpath(dir_path)
     if not os.path.isdir(actual_path):
-        return {"success": False, "data": None, "error": f"Directory not found: {actual_path}", "code": "DIR_NOT_FOUND"}
+        return err(f"Directory not found: {actual_path}", "DIR_NOT_FOUND")
 
     if not settings.ALLOW_EXTERNAL_FILES:
-        raw_dir_abs = os.path.abspath(settings.RAW_DIR)
+        raw_dir_abs = os.path.realpath(settings.RAW_DIR)
         if os.path.commonpath([actual_path, raw_dir_abs]) != raw_dir_abs:
-            return {"success": False, "data": None, "error": "External directory ingestion disabled.", "code": "ACCESS_DENIED"}
+            return err("External directory ingestion disabled.", "ACCESS_DENIED")
 
     results = {"ingested": [], "failed": []}
 
@@ -242,7 +227,7 @@ def ingest_directory(dir_path: str) -> dict[str, Any]:
 
     logger.info("Directory ingestion complete. Success: %d, Failed: %d",
                 len(results["ingested"]), len(results["failed"]))
-    return {"success": True, "data": results, "error": None, "code": None}
+    return ok(results)
 
 
 # ── Private Helpers ────────────────────────────────────────────────
@@ -255,7 +240,7 @@ def _download_url(url: str) -> tuple[str, str]:
         raise ValueError("Only http and https schemes are supported.")
 
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    max_size = 50 * 1024 * 1024  # 50 MB
+    max_size = settings.MAX_FILE_MB * 1024 * 1024
     content = bytearray()
     
     with urllib.request.urlopen(req, timeout=15) as response:
@@ -273,7 +258,7 @@ def _download_url(url: str) -> tuple[str, str]:
                 break
             content.extend(chunk)
             if len(content) > max_size:
-                raise ValueError("Download exceeded maximum allowed size (50MB).")
+                raise ValueError(f"Download exceeded maximum allowed size ({settings.MAX_FILE_MB}MB).")
 
     # Sanitize suffix
     suffix = ""
@@ -298,7 +283,7 @@ def _download_url(url: str) -> tuple[str, str]:
     return temp_path, temp_path
 
 
-def _extract_youtube_id(url_or_id: str) -> Optional[str]:
+def _extract_youtube_id(url_or_id: str) -> str | None:
     """Extract an 11-character YouTube video ID from various URL formats."""
     url_or_id = url_or_id.strip()
     if len(url_or_id) == 11 and re.match(r"^[0-9A-Za-z_-]{11}$", url_or_id):

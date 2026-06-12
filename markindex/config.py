@@ -33,6 +33,7 @@ class Settings:
         "MARKINDEX_RAW_DIR",
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "raw")
     ))
+    MAX_FILE_MB: int = int(os.environ.get("MARKINDEX_MAX_FILE_MB", "50"))
     ALLOW_EXTERNAL_FILES: bool = field(default_factory=lambda: os.environ.get(
         "MARKINDEX_ALLOW_EXTERNAL_FILES", "false"
     ).lower() == "true")

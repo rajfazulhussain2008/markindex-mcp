@@ -173,6 +173,7 @@ All settings are managed via environment variables (prefix: `MARKINDEX_`):
 | `MARKINDEX_OUTPUTS_DIR` | `./outputs` | AI generated reports directory |
 | `MARKINDEX_LOG_LEVEL` | `INFO` | Log verbosity: DEBUG, INFO, WARNING, ERROR |
 | `MARKINDEX_ALLOW_EXTERNAL_FILES` | `false` | Enable access outside `raw/` directory |
+| `MARKINDEX_MAX_FILE_MB` | `50` | Maximum file size for URL downloads |
 
 Copy `.env.example` → `.env` and customize as needed.
 
@@ -203,6 +204,50 @@ All tools return a consistent standard dictionary: `{"success": true/false, "dat
 | `list_documents()` | List all ingested documents |
 | `delete_document(doc_id)` | Delete a document from index and cache |
 | `save_to_outputs(filename, content)` | Save AI-generated reports to the `outputs/` folder |
+| `get_server_status()` | Get the server's version, uptime, and memory statistics |
+
+---
+
+## 🛠️ Example Workflow (For LLMs)
+
+If you are an LLM using MarkIndex MCP, here is how you can effectively process a large document:
+
+1. **Ingest the document:**
+   ```python
+   ingest_document(filepath="https://example.com/corporate-policy.pdf")
+   # Returns: {"success": True, "data": {"document_id": "1234-abcd", ...}}
+   ```
+2. **Search for a topic:**
+   ```python
+   search_sections(doc_id="1234-abcd", query="vehicle compensation", limit=3)
+   # Returns the Top 3 sections matching "vehicle" and "compensation".
+   ```
+3. **Read the relevant section by ID:**
+   ```python
+   # The search tool returned a section with ID "corporate-policy-vehicle-claims-2"
+   read_section(doc_id="1234-abcd", section_title="corporate-policy-vehicle-claims-2")
+   ```
+4. **Navigate to the next section for more context:**
+   ```python
+   get_adjacent_sections(doc_id="1234-abcd", section_title="corporate-policy-vehicle-claims-2")
+   # Read the "next" section ID to continue reading sequentially.
+   ```
+
+---
+
+## 🛡️ Security & Troubleshooting
+
+### Strict Path Security
+MarkIndex enforces strict path traversal mitigation. 
+By default, `MARKINDEX_ALLOW_EXTERNAL_FILES=false`. You cannot ingest local files outside of the `raw/` directory, nor save outputs outside of `outputs/`.
+Files ingested via URL are heavily sanitized. The maximum file size limit is controlled by `MARKINDEX_MAX_FILE_MB` (default `50`).
+
+### Resolving Duplicate Section IDs
+If a document contains multiple headers with the exact same text (e.g. `## Summary`), MarkIndex assigns them deterministic, stable IDs by appending numerical counters (`summary`, `summary-2`, `summary-3`). 
+When calling `read_section` or `get_adjacent_sections`, always use the **exact section ID** provided by `get_document_outline` or `search_sections` to avoid ambiguity.
+
+### Missing `Any` or `dict` Type Hint Errors
+If you are upgrading from `1.x` to `2.x`, ensure you have installed the exact `2.0.0` version. MarkIndex `2.0.0` uses Python 3.11+ strictly typed `ToolResponse` models to guarantee clean JSON structures for all LLM tools.
 
 ---
 
