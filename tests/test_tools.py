@@ -9,7 +9,7 @@ import tempfile
 
 from markindex.config import settings
 from markindex.server import documents
-from markindex.tools.ingest import ingest_text, ingest_document
+from markindex.tools.ingest import ingest_document, ingest_text
 from markindex.tools.manage import list_documents
 
 
