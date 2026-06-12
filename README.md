@@ -4,16 +4,26 @@
 
 ### Enterprise Document Intelligence Server
 
+![CI](https://github.com/rajfazulhussain2008/markindex-mcp/actions/workflows/ci.yml/badge.svg)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://python.org)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Compatible-00B4D8?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgZmlsbD0id2hpdGUiLz48L3N2Zz4=)](https://modelcontextprotocol.io)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-2.0.0-brightgreen)](pyproject.toml)
 
-**MarkIndex** is a production-ready [Model Context Protocol](https://modelcontextprotocol.io) server that empowers LLMs to accurately navigate and retrieve information from complex documents using **Page Index RAG** methodology.
+**Turn PDFs, Word docs, Markdown, websites, and YouTube transcripts into a local-first MCP knowledge base that LLMs can search, read, and navigate by stable section IDs — no vector database required.**
 
-Built on [Microsoft MarkItDown](https://github.com/microsoft/markitdown) for universal document conversion and a custom hierarchical section parser with TF-IDF search ranking.
+*If this helps your MCP/RAG workflow, please consider starring the repo ⭐*
 
 </div>
+
+**Key Advantages:**
+- 🏠 Local-first architecture
+- 🚫 No vector DB required
+- 🔑 Stable section IDs
+- 📖 Section-level search/read/navigation
+- 🤖 Works seamlessly with Claude Desktop & MCP clients
+- ⚡ Built on Microsoft MarkItDown
 
 ---
 
@@ -108,15 +118,36 @@ markindex-mcp/
 
 ---
 
+## ⏱️ 30-Second Demo
+
+Here are example MCP tool calls an LLM can make to process documents efficiently:
+
+```python
+# 1. Ingest document (Place files in raw/ first unless MARKINDEX_ALLOW_EXTERNAL_FILES=true)
+ingest_document("raw/company_policy.pdf")
+
+# 2. Search for relevant sections using fast TF-IDF
+search_sections(doc_id="doc_xyz123", query="vehicle compensation", limit=3)
+
+# 3. Read specific section with full surrounding context
+read_section(doc_id="doc_xyz123", section_title="vehicle-claims-compensation")
+
+# 4. Navigate sequentially through the document
+get_adjacent_sections(doc_id="doc_xyz123", section_title="vehicle-claims-compensation")
+
+# 5. Save the final report locally
+save_to_outputs("vehicle_claims_summary.md", summary)
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
-
 - Python 3.11+
 - pip
 
 ### Installation
-
 ```bash
 # Clone the repository
 git clone https://github.com/rajfazulhussain2008/markindex-mcp.git
@@ -134,19 +165,8 @@ pip install -r requirements.txt
 pip install youtube-transcript-api
 ```
 
-### Running the Server
-
-```bash
-# Run as a module
-python -m markindex
-
-# Or use the CLI entry point (after pip install -e .)
-markindex
-```
-
-### MCP Client Configuration
-
-Add to your MCP client config (e.g., Claude Desktop):
+### Claude Desktop Configuration
+Add the following to your `claude_desktop_config.json` (ensure you use absolute paths, install dependencies first, and restart Claude after saving):
 
 ```json
 {
@@ -154,7 +174,7 @@ Add to your MCP client config (e.g., Claude Desktop):
     "markindex": {
       "command": "python",
       "args": ["-m", "markindex"],
-      "cwd": "/path/to/markindex-mcp"
+      "cwd": "/absolute/path/to/markindex-mcp"
     }
   }
 }
@@ -163,7 +183,6 @@ Add to your MCP client config (e.g., Claude Desktop):
 ---
 
 ## 🔧 Configuration
-
 All settings are managed via environment variables (prefix: `MARKINDEX_`):
 
 | Variable | Default | Description |
@@ -173,32 +192,33 @@ All settings are managed via environment variables (prefix: `MARKINDEX_`):
 | `MARKINDEX_OUTPUTS_DIR` | `./outputs` | AI generated reports directory |
 | `MARKINDEX_LOG_LEVEL` | `INFO` | Log verbosity: DEBUG, INFO, WARNING, ERROR |
 | `MARKINDEX_ALLOW_EXTERNAL_FILES` | `false` | Enable access outside `raw/` directory |
-| `MARKINDEX_MAX_FILE_MB` | `50` | Maximum file size for URL downloads |
+| `MARKINDEX_MAX_FILE_MB` | `50` | Maximum file size for local/URL downloads |
 
 Copy `.env.example` → `.env` and customize as needed.
 
 ---
 
 ## 📚 Tool Reference
-
-### Core Tools
-
 All tools return a consistent standard dictionary: `{"success": true/false, "data": ..., "error": null, "code": null}`
 
-1. **`ingest_document(filepath)`**: Download a URL (with strict size/type safety constraints) or ingest a local file.
-2. **`ingest_directory(dir_path)`**: Recursively ingest a whole folder. 
-3. **`list_documents()`**: View all ingested docs.
-4. **`delete_document(doc_id)`**: Completely purge a document from memory and disk.
+### Core Tools
+| Tool | Description |
+|---|---|
+| `ingest_document(filepath)` | Download a URL or ingest a local file (strict size/type safety constraints). |
+| `ingest_directory(dir_path)`| Recursively ingest a whole folder. |
+| `list_documents()` | View all ingested docs. |
+| `delete_document(doc_id)` | Completely purge a document from memory and disk. |
 
 ### LLM Exploration Tools
-1. **`get_document_outline(doc_id)`**: View the document's structure, titles, stable IDs, and sizes.
-2. **`search_sections(doc_id, query)`**: Find specific keywords or regex patterns using the built-in N-Gram TF-IDF engine.
-3. **`read_section(doc_id, section_id)`**: Fetch the full markdown content of a section.
-4. **`get_adjacent_sections(doc_id, section_id)`**: Read the parent, previous, or next section.
-5. **`summarize_section(doc_id, section_id)`**: Generate an extractive summary of a huge section without filling up the context window.
+| Tool | Description |
+|---|---|
+| `get_document_outline(doc_id)` | View the document's structure, titles, stable IDs, and sizes. |
+| `search_sections(doc_id, query)` | Find specific keywords/regex using N-Gram TF-IDF engine. |
+| `read_section(doc_id, section_id)` | Fetch the full markdown content of a section. |
+| `get_adjacent_sections(...)` | Read the parent, previous, or next section. |
+| `summarize_section(...)` | Generate an extractive summary of a huge section. |
 
 ### Management Tools
-
 | Tool | Description |
 |---|---|
 | `list_documents()` | List all ingested documents |
@@ -208,39 +228,12 @@ All tools return a consistent standard dictionary: `{"success": true/false, "dat
 
 ---
 
-## 🛠️ Example Workflow (For LLMs)
-
-If you are an LLM using MarkIndex MCP, here is how you can effectively process a large document:
-
-1. **Ingest the document:**
-   ```python
-   ingest_document(filepath="https://example.com/corporate-policy.pdf")
-   # Returns: {"success": True, "data": {"document_id": "1234-abcd", ...}}
-   ```
-2. **Search for a topic:**
-   ```python
-   search_sections(doc_id="1234-abcd", query="vehicle compensation", limit=3)
-   # Returns the Top 3 sections matching "vehicle" and "compensation".
-   ```
-3. **Read the relevant section by ID:**
-   ```python
-   # The search tool returned a section with ID "corporate-policy-vehicle-claims-2"
-   read_section(doc_id="1234-abcd", section_title="corporate-policy-vehicle-claims-2")
-   ```
-4. **Navigate to the next section for more context:**
-   ```python
-   get_adjacent_sections(doc_id="1234-abcd", section_title="corporate-policy-vehicle-claims-2")
-   # Read the "next" section ID to continue reading sequentially.
-   ```
-
----
-
 ## 🛡️ Security & Troubleshooting
 
 ### Strict Path Security
 MarkIndex enforces strict path traversal mitigation. 
 By default, `MARKINDEX_ALLOW_EXTERNAL_FILES=false`. You cannot ingest local files outside of the `raw/` directory, nor save outputs outside of `outputs/`.
-Files ingested via URL are heavily sanitized. The maximum file size limit is controlled by `MARKINDEX_MAX_FILE_MB` (default `50`).
+Files ingested via local paths or URLs are heavily sanitized. The maximum file size limit is controlled by `MARKINDEX_MAX_FILE_MB` (default `50`).
 
 ### Resolving Duplicate Section IDs
 If a document contains multiple headers with the exact same text (e.g. `## Summary`), MarkIndex assigns them deterministic, stable IDs by appending numerical counters (`summary`, `summary-2`, `summary-3`). 
@@ -251,26 +244,22 @@ If you are upgrading from `1.x` to `2.x`, ensure you have installed the exact `2
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing & Development
+
+See our [Contributing Guide](CONTRIBUTING.md) to get started!
 
 ```bash
 # Run the test suite
 python -m pytest tests/ -v
-
-# With coverage
-python -m pytest tests/ --cov=markindex --cov-report=term-missing
 ```
 
 ---
 
 ## 📄 License
-
 This project is licensed under the [MIT License](LICENSE).
 
----
-
 <div align="center">
-
 **Built with ❤️ by Rajmohamed H**
 
+*Recommended Topics: mcp, model-context-protocol, rag, document-ai, document-intelligence, markitdown, python, llm-tools, claude, ai, knowledge-base, tf-idf, markdown*
 </div>

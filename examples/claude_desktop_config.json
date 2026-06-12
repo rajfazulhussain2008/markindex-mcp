@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "markindex": {
+      "command": "python",
+      "args": ["-m", "markindex"],
+      "cwd": "/absolute/path/to/markindex-mcp"
+    }
+  }
+}
