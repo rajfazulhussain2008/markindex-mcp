@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "markindex-mcp"
+version = "2.0.0"
+description = "Enterprise document intelligence server powered by Model Context Protocol and Page Index RAG."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+authors = [
+    {name = "MarkIndex Team"},
+]
+keywords = ["mcp", "rag", "document-intelligence", "markitdown", "page-index"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "markitdown[all]>=0.1.0",
+]
+
+[project.optional-dependencies]
+youtube = ["youtube-transcript-api>=0.6.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[project.scripts]
+markindex = "markindex.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["markindex*"]
