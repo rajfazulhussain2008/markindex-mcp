@@ -236,7 +236,7 @@ def _download_url(url: str) -> tuple[str, str]:
     if "." in last_part:
         suffix = "." + last_part.split(".")[-1]
 
-    temp_dir = os.path.join(settings.DATA_DIR, "temp")
+    temp_dir = os.path.join(settings.RAW_DIR, "temp")
     os.makedirs(temp_dir, exist_ok=True)
     temp_file = os.path.join(temp_dir, f"dl_{uuid.uuid4().hex}{suffix}")
     with open(temp_file, "wb") as f:

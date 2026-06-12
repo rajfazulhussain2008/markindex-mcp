@@ -81,7 +81,9 @@ markindex-mcp/
 ├── tests/                           # Test suite
 ├── pyproject.toml                   # PEP 621 packaging
 ├── requirements.txt                 # Dependencies
-└── data/                            # Auto-created cache directory
+├── raw/                             # [NEW] Drop your source files here
+├── wiki/                            # [NEW] Auto-generated markdown & master index.md
+└── outputs/                         # [NEW] Claude's generated reports and summaries
 ```
 
 ---
@@ -185,6 +187,7 @@ Copy `.env.example` → `.env` and customize as needed.
 |---|---|
 | `list_documents()` | List all ingested documents |
 | `delete_document(doc_id)` | Delete a document from index and cache |
+| `save_to_outputs(filename, content)` | **[NEW]** Save AI-generated reports to the `outputs/` folder |
 
 ---
 

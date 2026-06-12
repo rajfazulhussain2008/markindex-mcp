@@ -54,7 +54,9 @@ def _register_tools() -> None:
 def main() -> None:
     """Boot the MarkIndex MCP server."""
     logger.info("Starting MarkIndex MCP v2.0.0")
-    logger.info("Data directory: %s", settings.DATA_DIR)
+    logger.info("Raw Directory: %s", settings.RAW_DIR)
+    logger.info("Wiki Directory: %s", settings.WIKI_DIR)
+    logger.info("Outputs Directory: %s", settings.OUTPUTS_DIR)
 
     _load_cache()
     _register_tools()

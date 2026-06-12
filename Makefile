@@ -16,7 +16,9 @@ clean:
 	rm -rf markindex/tools/__pycache__
 	rm -rf tests/__pycache__
 	rm -rf .pytest_cache
-	rm -rf data/*
+	rm -rf raw/*
+	rm -rf wiki/*
+	rm -rf outputs/*
 
 run:
 	python -m markindex
