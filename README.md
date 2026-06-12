@@ -55,8 +55,9 @@ How does our MarkIndex methodology compare to traditional Vector Database RAG?
 | **Setup Complexity** | 3/10 | **9/10** |
 | **Cost to Run** | 5/10 | **10/10** |
 | **Sequential Reading** | 2/10 | **10/10** |
+| **Token Efficiency** | 3/10 | **9/10** |
 | **Fuzzy Semantic Match** | **9/10** | 6/10 |
-| **Total Score** | 23/50 | **45/50** |
+| **Total Score** | 26/60 | **54/60** |
 
 *MarkIndex excels by preserving the original document hierarchy and allowing the LLM to paginate through full, unbroken sections, rather than receiving fragmented, out-of-context vector chunks.*
 
