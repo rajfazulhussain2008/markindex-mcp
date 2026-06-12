@@ -33,6 +33,18 @@ Built on [Microsoft MarkItDown](https://github.com/microsoft/markitdown) for uni
 
 ---
 
+## ⚙️ How It Works: The 3-Folder Secret System
+
+MarkIndex utilizes an organized, self-updating knowledge architecture:
+
+1. **`raw/`**: Drop your source materials here (PDFs, Word documents, HTML, etc.). The server reads these files but never alters them.
+2. **`wiki/`**: The server processes the raw files and structures them into cross-linked Markdown pages (one per document). It also generates a master `index.md` file that acts as a crawlable map, allowing the LLM to efficiently fetch context without wasting tokens.
+3. **`outputs/`**: This folder automatically saves the results, reports, or plans generated every time you ask the LLM to write something based on your knowledge base.
+
+By implementing this architecture, you essentially build a self-updating, personal consultation engine tailored to your exact data and files.
+
+---
+
 ## ⚖️ Vector RAG vs. Page Index RAG (MarkIndex)
 
 How does our MarkIndex methodology compare to traditional Vector Database RAG?
@@ -148,7 +160,9 @@ All settings are managed via environment variables (prefix: `MARKINDEX_`):
 
 | Variable | Default | Description |
 |---|---|---|
-| `MARKINDEX_DATA_DIR` | `./data` | Persistent cache directory |
+| `MARKINDEX_RAW_DIR` | `./raw` | Source materials directory |
+| `MARKINDEX_WIKI_DIR` | `./wiki` | Processed markdown & master index directory |
+| `MARKINDEX_OUTPUTS_DIR` | `./outputs` | AI generated reports directory |
 | `MARKINDEX_LOG_LEVEL` | `INFO` | Log verbosity: DEBUG, INFO, WARNING, ERROR |
 
 Copy `.env.example` → `.env` and customize as needed.
