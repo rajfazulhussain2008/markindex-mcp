@@ -16,7 +16,6 @@ from typing import Optional, Any
 from markindex.config import settings
 from markindex.core.parser import parse_markdown_to_tree
 from markindex.core.storage import save_document
-from markindex.exceptions import IngestionError
 from markindex.logger import get_logger
 from markindex.server import mcp, md_converter, documents
 

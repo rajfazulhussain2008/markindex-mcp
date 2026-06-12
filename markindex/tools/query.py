@@ -5,8 +5,7 @@ with pagination, and performing TF-IDF ranked searches.
 """
 
 import difflib
-import json
-from typing import Optional
+from typing import Optional, Any
 
 from markindex.core.parser import (
     find_section,
@@ -29,7 +28,7 @@ def _require_document(doc_id: str) -> dict:
 
 
 @mcp.tool()
-def get_document_outline(doc_id: str) -> str:
+def get_document_outline(doc_id: str) -> dict[str, Any]:
     """Retrieve the hierarchical outline (Table of Contents) of an ingested document.
 
     Args:
@@ -103,7 +102,7 @@ def read_section(
 
 
 @mcp.tool()
-def search_sections(doc_id: str, query: str, is_regex: bool = False) -> str:
+def search_sections(doc_id: str, query: str, is_regex: bool = False) -> dict[str, Any]:
     """Search across all sections using TF-IDF relevance ranking.
 
     Args:

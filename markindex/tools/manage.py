@@ -3,7 +3,6 @@
 Provides tools for listing and deleting ingested documents.
 """
 
-import json
 import os
 from typing import Any
 

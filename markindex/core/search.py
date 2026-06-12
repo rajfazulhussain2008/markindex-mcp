@@ -194,10 +194,21 @@ def _extract_snippets(
         # Sort indices by start position
         indices.sort(key=lambda x: x[0])
 
-    snippets: list[str] = []
-    for start, end in indices[:max_snippets]:
+    merged_indices: list[list[int]] = []
+    for start, end in indices:
         s = max(0, start - context_chars)
         e = min(len(content), end + context_chars)
+        if not merged_indices:
+            merged_indices.append([s, e])
+        else:
+            last_s, last_e = merged_indices[-1]
+            if s <= last_e:
+                merged_indices[-1][1] = max(last_e, e)
+            else:
+                merged_indices.append([s, e])
+
+    snippets: list[str] = []
+    for s, e in merged_indices[:max_snippets]:
         snippet = content[s:e].replace("\n", " ")
         if s > 0:
             snippet = "..." + snippet

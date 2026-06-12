@@ -197,12 +197,14 @@ class TestSearch(unittest.TestCase):
         self.assertGreater(len(results), 0)
         self.assertGreater(len(results[0]["snippets"]), 0)
 
-    def test_snippets_fallback(self):
+    def test_snippets_fallback_and_deduplication(self):
         results = rank_sections_tfidf(self.tree, "vehicle performance")
         self.assertGreater(len(results), 0)
-        # the exact phrase "vehicle performance" is not present, but "performance" is.
-        # it should fallback to unigrams and still find a snippet.
-        self.assertGreater(len(results[0]["snippets"]), 0)
+        snippets = results[0]["snippets"]
+        self.assertGreater(len(snippets), 0)
+        
+        # Verify deduplication
+        self.assertEqual(len(snippets), len(set(snippets)))
 
     def test_title_boost(self):
         results = rank_sections_tfidf(self.tree, "results")
@@ -356,6 +358,14 @@ class TestStartup(unittest.TestCase):
             pass # Expected, stdio server waits for input
         except subprocess.CalledProcessError as e:
             self.fail(f"Server startup failed: {e.stderr.decode()}")
+
+    def test_register_tools(self):
+        # Verify we can import server and register tools without warnings
+        try:
+            from markindex.server import _register_tools
+            _register_tools()
+        except Exception as e:
+            self.fail(f"_register_tools raised an exception: {e}")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
