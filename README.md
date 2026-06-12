@@ -113,7 +113,7 @@ markindex-mcp/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/markindex-mcp.git
+git clone https://github.com/rajfazulhussain2008/markindex-mcp.git
 cd markindex-mcp
 
 # Create a virtual environment
