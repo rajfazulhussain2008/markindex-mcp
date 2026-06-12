@@ -5,18 +5,6 @@ Provides tools for listing and deleting ingested documents.
 
 import json
 import os
-
-from markindex.config import settings
-from markindex.core.storage import delete_document_file
-from markindex.exceptions import DocumentNotFoundError
-from markindex.logger import get_logger
-"""Document management tools for MarkIndex MCP.
-
-Provides tools for listing and deleting ingested documents.
-"""
-
-import json
-import os
 from typing import Any
 
 from markindex.config import settings

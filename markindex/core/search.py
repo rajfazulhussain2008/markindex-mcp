@@ -135,7 +135,7 @@ def rank_sections_tfidf(
                 weight = 2.5 if " " in term else 1.0
                 score += tf * idf[term] * weight
 
-        snippets = _extract_snippets(node["content"], query_lower, rx, content_matched)
+        snippets = _extract_snippets(node["content"], query_lower, rx, content_matched, query_unigrams_pre)
 
         results.append({
             "section_title": node["title"],
@@ -156,6 +156,7 @@ def _extract_snippets(
     query_lower: str,
     rx: re.Pattern | None,
     content_matched: bool,
+    query_terms: list[str],
     max_snippets: int = 3,
     context_chars: int = 80,
 ) -> list[str]:
@@ -170,12 +171,28 @@ def _extract_snippets(
     else:
         content_lower = content.lower()
         start_idx = 0
+        # Try exact phrase first
         while True:
             idx = content_lower.find(query_lower, start_idx)
             if idx == -1:
                 break
             indices.append((idx, idx + len(query_lower)))
             start_idx = idx + len(query_lower)
+            
+        # Fallback to individual terms if exact phrase not found
+        if not indices:
+            for term in query_terms:
+                if len(term) < 3: continue  # Skip very short words like "in", "a"
+                start_idx = 0
+                while True:
+                    idx = content_lower.find(term, start_idx)
+                    if idx == -1:
+                        break
+                    indices.append((idx, idx + len(term)))
+                    start_idx = idx + len(term)
+        
+        # Sort indices by start position
+        indices.sort(key=lambda x: x[0])
 
     snippets: list[str] = []
     for start, end in indices[:max_snippets]:

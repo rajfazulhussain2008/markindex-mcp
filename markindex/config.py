@@ -21,10 +21,6 @@ class Settings:
         SUPPORTED_EXTENSIONS: File extensions accepted by the directory ingestion tool.
     """
 
-    DATA_DIR: str = field(default_factory=lambda: os.environ.get(
-        "MARKINDEX_DATA_DIR",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-    ))
     WIKI_DIR: str = field(default_factory=lambda: os.environ.get(
         "MARKINDEX_WIKI_DIR",
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "wiki")
@@ -51,7 +47,6 @@ class Settings:
 
     def __post_init__(self) -> None:
         """Ensure the workspace directories exist on initialization."""
-        os.makedirs(self.DATA_DIR, exist_ok=True)
         os.makedirs(self.WIKI_DIR, exist_ok=True)
         os.makedirs(self.OUTPUTS_DIR, exist_ok=True)
         os.makedirs(self.RAW_DIR, exist_ok=True)

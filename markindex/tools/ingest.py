@@ -6,10 +6,12 @@ YouTube transcripts, and entire directories.
 
 import os
 import re
+import tempfile
 import uuid
 import urllib.request
+import urllib.parse
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Any
 
 from markindex.config import settings
 from markindex.core.parser import parse_markdown_to_tree
@@ -64,7 +66,16 @@ def ingest_document(filepath: str) -> dict[str, Any]:
 
         cache_path = save_document(doc_id, metadata, markdown_text)
         tree = parse_markdown_to_tree(markdown_text)
-        documents[doc_id] = {"metadata": metadata, "tree": tree, "content": markdown_text}
+        
+        documents[doc_id] = {
+            "markdown": markdown_text,
+            "filepath": metadata["filepath"],
+            "filename": metadata["filename"],
+            "ingested_at": metadata["ingested_at"],
+            "size_chars": metadata["size_chars"],
+            "tree": tree,
+            "metadata": metadata
+        }
 
         logger.info("Successfully ingested document '%s' -> ID: %s", metadata["filename"], doc_id)
         return {
@@ -86,7 +97,7 @@ def ingest_document(filepath: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def ingest_text(title: str, text: str) -> str:
+def ingest_text(title: str, text: str) -> dict[str, Any]:
     """Ingest raw text or markdown directly into the index.
 
     Args:
@@ -101,32 +112,40 @@ def ingest_text(title: str, text: str) -> str:
         now = datetime.now(timezone.utc).isoformat()
         tree = parse_markdown_to_tree(text)
 
-        documents[doc_id] = {
-            "markdown": text,
+        metadata = {
             "filepath": f"RawText://{title}",
             "filename": title,
             "ingested_at": now,
             "size_chars": len(text),
-            "tree": tree,
         }
 
-        save_document(doc_id, {
-            "filepath": f"RawText://{title}",
-            "filename": title,
-            "ingested_at": now,
-            "size_chars": len(text),
-        }, text)
+        documents[doc_id] = {
+            "markdown": text,
+            "filepath": metadata["filepath"],
+            "filename": metadata["filename"],
+            "ingested_at": metadata["ingested_at"],
+            "size_chars": metadata["size_chars"],
+            "tree": tree,
+            "metadata": metadata
+        }
+
+        cache_path = save_document(doc_id, metadata, text)
 
         logger.info("Ingested text document '%s' as %s", title, doc_id)
-        return {"status": "success", "document_id": doc_id, "message": "Successfully ingested text document."}
+        return {
+            "success": True,
+            "data": {"document_id": doc_id, "cache_path": cache_path, "metadata": metadata},
+            "error": None,
+            "code": None
+        }
 
     except Exception as exc:
         logger.error("Text ingestion failed: %s", exc)
-        return {"status": "error", "message": f"Error ingesting text: {exc}"}
+        return {"success": False, "data": None, "error": str(exc), "code": "INGESTION_ERROR"}
 
 
 @mcp.tool()
-def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> str:
+def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> dict[str, Any]:
     """Ingest a YouTube video transcript into the index.
 
     Downloads the transcript using youtube-transcript-api, formats it into
@@ -141,7 +160,7 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> str:
     """
     video_id = _extract_youtube_id(url_or_id)
     if not video_id:
-        return {"status": "error", "message": "Could not extract valid YouTube video ID."}
+        return {"success": False, "data": None, "error": "Could not extract valid YouTube video ID.", "code": "INVALID_YOUTUBE_ID"}
 
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
@@ -156,28 +175,36 @@ def ingest_youtube(url_or_id: str, interval_seconds: int = 120) -> str:
         tree = parse_markdown_to_tree(markdown_text)
 
         yt_url = f"https://youtube.com/watch?v={video_id}"
-        documents[doc_id] = {
-            "markdown": markdown_text,
+        metadata = {
             "filepath": yt_url,
-            "filename": video_title,
+            "filename": f"YouTube - {video_title}",
             "ingested_at": now,
             "size_chars": len(markdown_text),
-            "tree": tree,
         }
 
-        save_document(doc_id, {
-            "filepath": yt_url,
-            "filename": video_title,
-            "ingested_at": now,
-            "size_chars": len(markdown_text),
-        }, markdown_text)
+        documents[doc_id] = {
+            "markdown": markdown_text,
+            "filepath": metadata["filepath"],
+            "filename": metadata["filename"],
+            "ingested_at": metadata["ingested_at"],
+            "size_chars": metadata["size_chars"],
+            "tree": tree,
+            "metadata": metadata
+        }
 
-        logger.info("Ingested YouTube '%s' (%s) as %s", video_title, video_id, doc_id)
-        return {"status": "success", "document_id": doc_id, "message": "Successfully ingested YouTube transcript."}
+        cache_path = save_document(doc_id, metadata, markdown_text)
+
+        logger.info("Ingested YouTube transcript for '%s' as %s", video_title, doc_id)
+        return {
+            "success": True,
+            "data": {"document_id": doc_id, "cache_path": cache_path, "metadata": metadata},
+            "error": None,
+            "code": None
+        }
 
     except Exception as exc:
-        logger.error("YouTube ingestion failed for '%s': %s", url_or_id, exc)
-        return {"status": "error", "message": f"Error fetching or parsing YouTube transcript: {exc}"}
+        logger.error("YouTube ingestion failed: %s", exc)
+        return {"success": False, "data": None, "error": str(exc), "code": "YOUTUBE_ERROR"}
 
 
 @mcp.tool()
@@ -269,7 +296,7 @@ def _download_url(url: str) -> tuple[str, str]:
     fd, temp_path = tempfile.mkstemp(suffix=suffix)
     with os.fdopen(fd, "wb") as f:
         f.write(content)
-    return temp_file, temp_file
+    return temp_path, temp_path
 
 
 def _extract_youtube_id(url_or_id: str) -> Optional[str]:

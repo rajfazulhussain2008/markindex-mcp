@@ -9,7 +9,7 @@ import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 # Ensure the project root is on sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,7 +26,9 @@ from markindex.core.parser import (
 from markindex.core.search import rank_sections_tfidf
 from markindex.core.summarizer import summarize_text
 from markindex.core.storage import parse_frontmatter, serialize_frontmatter
-
+from markindex.tools.ingest import ingest_text
+from markindex.tools.manage import list_documents
+from markindex.server import documents
 
 SAMPLE_MARKDOWN = """# Introduction
 
@@ -190,6 +192,18 @@ class TestSearch(unittest.TestCase):
         self.assertGreater(len(results), 0)
         self.assertEqual(results[0]["section_title"], "Methodology")
 
+    def test_snippets_generated(self):
+        results = rank_sections_tfidf(self.tree, "performance")
+        self.assertGreater(len(results), 0)
+        self.assertGreater(len(results[0]["snippets"]), 0)
+
+    def test_snippets_fallback(self):
+        results = rank_sections_tfidf(self.tree, "vehicle performance")
+        self.assertGreater(len(results), 0)
+        # the exact phrase "vehicle performance" is not present, but "performance" is.
+        # it should fallback to unigrams and still find a snippet.
+        self.assertGreater(len(results[0]["snippets"]), 0)
+
     def test_title_boost(self):
         results = rank_sections_tfidf(self.tree, "results")
         top = results[0]
@@ -290,6 +304,58 @@ class TestManageSecurity(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertIn("valid_report.md", res["data"]["saved_path"])
 
+
+class TestIngestionTools(unittest.TestCase):
+    def setUp(self):
+        documents.clear()
+
+    def test_ingest_text_schema(self):
+        res = ingest_text("Test Doc", "# Hello\nworld")
+        self.assertTrue(res["success"])
+        self.assertIn("document_id", res["data"])
+        
+        # Verify list_documents uses correct structure
+        docs = list_documents()
+        self.assertTrue(docs["success"])
+        self.assertEqual(len(docs["data"]), 1)
+        self.assertEqual(docs["data"][0]["filename"], "Test Doc")
+        self.assertEqual(docs["data"][0]["size_chars"], 13)
+
+    @patch("markindex.tools.ingest.urllib.request.urlopen")
+    def test_download_url_valid(self, mock_urlopen):
+        from markindex.tools.ingest import _download_url
+        import io
+        
+        mock_response = MagicMock()
+        mock_response.info.return_value.get.return_value = "text/html"
+        mock_response.read.side_effect = [b"hello web", b""]
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        temp_path, _ = _download_url("http://example.com/page.html")
+        self.assertTrue(os.path.exists(temp_path))
+        self.assertTrue(temp_path.endswith(".html"))
+        
+        with open(temp_path, "rb") as f:
+            self.assertEqual(f.read(), b"hello web")
+        os.remove(temp_path)
+
+
+class TestStartup(unittest.TestCase):
+    def test_server_startup(self):
+        import subprocess
+        # Should exit quickly and without errors if just checking help or similar.
+        # If the server hangs because it's a stdio server, we can timeout safely.
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "markindex"],
+                timeout=2,
+                capture_output=True,
+                check=True
+            )
+        except subprocess.TimeoutExpired:
+            pass # Expected, stdio server waits for input
+        except subprocess.CalledProcessError as e:
+            self.fail(f"Server startup failed: {e.stderr.decode()}")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
