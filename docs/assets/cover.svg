@@ -51,10 +51,10 @@
 
     <!-- Typography -->
     <g transform="translate(500, 185)">
-        <text x="-40" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="800" fill="white" text-anchor="middle" letter-spacing="0">Mark<tspan fill="url(#textGrad)">Index</tspan></text>
+        <text x="-10" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="800" fill="white" text-anchor="end" letter-spacing="0">Mark<tspan fill="url(#textGrad)">Index</tspan></text>
         
-        <rect x="105" y="-38" width="64" height="34" rx="17" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
-        <text x="137" y="-14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#8b949e" text-anchor="middle">MCP</text>
+        <rect x="10" y="-38" width="64" height="34" rx="17" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <text x="42" y="-14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#8b949e" text-anchor="middle">MCP</text>
 
         <text x="0" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" font-weight="500" fill="#c9d1d9" letter-spacing="0.5" text-anchor="middle">Enterprise Document Intelligence Server</text>
         <text x="0" y="80" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" fill="#8b949e" text-anchor="middle">&gt; TF-IDF Search • Hierarchical Markdown • Stable Section IDs</text>
