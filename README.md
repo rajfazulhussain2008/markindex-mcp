@@ -11,6 +11,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-2.0.0-brightgreen)](pyproject.toml)
 
+![MarkIndex MCP](docs/assets/cover.png)
+
 **Turn PDFs, Word docs, Markdown, websites, and YouTube transcripts into a local-first MCP knowledge base that LLMs can search, read, and navigate by stable section IDs — no vector database required.**
 
 *If this helps your MCP/RAG workflow, please consider starring the repo ⭐*
