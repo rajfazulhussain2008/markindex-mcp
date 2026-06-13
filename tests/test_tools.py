@@ -256,6 +256,7 @@ class TestIngestionTools(unittest.TestCase):
     @patch("youtube_transcript_api.YouTubeTranscriptApi.get_transcript")
     def test_ingest_youtube_valid(self, mock_get):
         from markindex.tools.ingest import ingest_youtube
+
         mock_get.return_value = [{"text": "Hello", "start": 0.0, "duration": 1.0}]
         res = ingest_youtube("dQw4w9WgXcQ")
         self.assertTrue(res["success"])
@@ -263,6 +264,7 @@ class TestIngestionTools(unittest.TestCase):
 
     def test_ingest_youtube_invalid_id(self):
         from markindex.tools.ingest import ingest_youtube
+
         res = ingest_youtube("invalid id space")
         self.assertFalse(res["success"])
         self.assertEqual(res["code"], "INVALID_YOUTUBE_ID")
@@ -270,6 +272,7 @@ class TestIngestionTools(unittest.TestCase):
     @patch("youtube_transcript_api.YouTubeTranscriptApi.get_transcript")
     def test_ingest_youtube_error(self, mock_get):
         from markindex.tools.ingest import ingest_youtube
+
         mock_get.side_effect = Exception("API failure")
         res = ingest_youtube("dQw4w9WgXcQ")
         self.assertFalse(res["success"])
@@ -280,10 +283,12 @@ class TestIngestionTools(unittest.TestCase):
         from markindex.tools.ingest import _download_url
 
         mock_response = MagicMock()
+
         def mock_get(key, default=None):
             if key == "Content-Length":
                 return None
             return "text/html"
+
         mock_response.headers.get.side_effect = mock_get
 
         # generate huge data
@@ -351,12 +356,14 @@ class TestIngestionTools(unittest.TestCase):
 
     def test_delete_document_error(self):
         from markindex.tools.manage import delete_document
+
         res = delete_document("not-a-doc")
         self.assertFalse(res["success"])
         self.assertEqual(res["code"], "DOC_NOT_FOUND")
 
     def test_save_to_outputs_path_traversal(self):
         from markindex.tools.manage import save_to_outputs
+
         res = save_to_outputs("../outside.md", "content")
         self.assertFalse(res["success"])
         self.assertEqual(res["code"], "PATH_TRAVERSAL")
