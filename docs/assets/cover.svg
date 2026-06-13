@@ -1,69 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="100%" height="100%">
     <defs>
+        <!-- Background Gradient -->
         <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0a0e14"/>
-            <stop offset="100%" stop-color="#151b24"/>
-        </linearGradient>
-        <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#00B4D8"/>
-            <stop offset="100%" stop-color="#48CAE4"/>
-        </linearGradient>
-        <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0077B6"/>
-            <stop offset="100%" stop-color="#00B4D8"/>
+            <stop offset="0%" stop-color="#0d1117"/>
+            <stop offset="100%" stop-color="#161b22"/>
         </linearGradient>
         
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1"/>
+        <!-- Text Gradient -->
+        <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#58a6ff"/>
+            <stop offset="100%" stop-color="#39d353"/>
+        </linearGradient>
+        
+        <!-- Grid Pattern -->
+        <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
         </pattern>
         
-        <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-            </feMerge>
+        <!-- Drop Shadow -->
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
         </filter>
     </defs>
     
-    <!-- Background -->
+    <!-- Background Layer -->
     <rect width="1000" height="300" fill="url(#bg)"/>
     <rect width="1000" height="300" fill="url(#grid)"/>
 
-    <!-- Nodes/Graph representing Indexing -->
-    <g opacity="0.6">
-        <!-- Lines connecting nodes -->
-        <path d="M 750 100 L 850 60 L 920 150 L 820 220 L 700 180 Z" fill="none" stroke="#00B4D8" stroke-width="1.5" stroke-opacity="0.5"/>
-        <path d="M 750 100 L 920 150" fill="none" stroke="#00B4D8" stroke-width="1.5" stroke-opacity="0.5"/>
-        <path d="M 850 60 L 820 220" fill="none" stroke="#00B4D8" stroke-width="1.5" stroke-opacity="0.5"/>
+    <!-- Central Graphics Layer -->
+    <g transform="translate(500, 95)" filter="url(#shadow)">
+        <!-- A stylized document / database icon -->
+        <!-- Center polygon -->
+        <path d="M 0 -35 L 35 -15 L 35 25 L 0 45 L -35 25 L -35 -15 Z" fill="#1f242c" stroke="#58a6ff" stroke-width="2"/>
         
-        <!-- Glowing Nodes -->
-        <circle cx="750" cy="100" r="6" fill="#00B4D8" filter="url(#glow)"/>
-        <circle cx="850" cy="60" r="5" fill="#48CAE4" filter="url(#glow)"/>
-        <circle cx="920" cy="150" r="8" fill="#0077B6" filter="url(#glow)"/>
-        <circle cx="820" cy="220" r="6" fill="#00B4D8" filter="url(#glow)"/>
-        <circle cx="700" cy="180" r="5" fill="#48CAE4" filter="url(#glow)"/>
+        <!-- Inner accents -->
+        <path d="M -35 -15 L 0 5 L 35 -15" fill="none" stroke="#58a6ff" stroke-width="2" stroke-opacity="0.6"/>
+        <path d="M 0 5 L 0 45" fill="none" stroke="#58a6ff" stroke-width="2" stroke-opacity="0.6"/>
         
-        <!-- Fake files -->
-        <rect x="735" y="80" width="16" height="20" rx="2" fill="#2d333b" stroke="#00B4D8" stroke-width="1"/>
-        <text x="743" y="93" fill="#00B4D8" font-family="monospace" font-size="6" text-anchor="middle">.md</text>
-        
-        <rect x="905" y="130" width="16" height="20" rx="2" fill="#2d333b" stroke="#0077B6" stroke-width="1"/>
-        <text x="913" y="143" fill="#0077B6" font-family="monospace" font-size="6" text-anchor="middle">pdf</text>
-        
-        <rect x="805" y="200" width="16" height="20" rx="2" fill="#2d333b" stroke="#48CAE4" stroke-width="1"/>
-        <text x="813" y="213" fill="#48CAE4" font-family="monospace" font-size="6" text-anchor="middle">.txt</text>
+        <!-- Floating document layers -->
+        <rect x="-65" y="-20" width="30" height="40" rx="3" fill="#0d1117" stroke="#39d353" stroke-width="1.5" opacity="0.9"/>
+        <line x1="-55" y1="-10" x2="-45" y2="-10" stroke="#39d353" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="-55" y1="-2" x2="-40" y2="-2" stroke="#39d353" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="-55" y1="6" x2="-50" y2="6" stroke="#39d353" stroke-width="1.5" stroke-linecap="round"/>
+
+        <rect x="35" y="-10" width="30" height="40" rx="3" fill="#0d1117" stroke="#a371f7" stroke-width="1.5" opacity="0.9"/>
+        <line x1="45" y1="0" x2="55" y2="0" stroke="#a371f7" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="45" y1="8" x2="60" y2="8" stroke="#a371f7" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="45" y1="16" x2="50" y2="16" stroke="#a371f7" stroke-width="1.5" stroke-linecap="round"/>
     </g>
 
-    <!-- Content -->
-    <g transform="translate(80, 130)">
-        <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="bold" fill="white" letter-spacing="-1">Mark<tspan fill="url(#textGrad)">Index</tspan></text>
-        
-        <rect x="250" y="-35" width="60" height="30" rx="15" fill="#1e2532" stroke="#3d4a5d" stroke-width="1"/>
-        <text x="280" y="-14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#a0b3c6" text-anchor="middle">MCP</text>
-        
-        <text x="0" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" font-weight="400" fill="#8b949e">Enterprise Document Intelligence Server</text>
-        
-        <text x="0" y="85" font-family="monospace" font-size="14" font-weight="400" fill="#58a6ff">&gt; local-first TF-IDF • hierarchical parsed trees • stable section IDs</text>
+    <!-- Typography -->
+    <g transform="translate(500, 185)" text-anchor="middle">
+        <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="800" fill="white" letter-spacing="0">Mark<tspan fill="url(#textGrad)">Index</tspan> <tspan font-size="24" fill="#8b949e" font-weight="600" dy="-14">MCP</tspan></text>
+        <text x="0" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" font-weight="500" fill="#c9d1d9" letter-spacing="0.5">Enterprise Document Intelligence Server</text>
+        <text x="0" y="80" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" fill="#8b949e">&gt; TF-IDF Search • Hierarchical Markdown • Stable Section IDs</text>
     </g>
 </svg>
