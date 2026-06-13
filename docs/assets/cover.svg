@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="100%" height="100%">
+    <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0a0e14"/>
+            <stop offset="100%" stop-color="#151b24"/>
+        </linearGradient>
+        <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00B4D8"/>
+            <stop offset="100%" stop-color="#48CAE4"/>
+        </linearGradient>
+        <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0077B6"/>
+            <stop offset="100%" stop-color="#00B4D8"/>
+        </linearGradient>
+        
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1"/>
+        </pattern>
+        
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+    
+    <!-- Background -->
+    <rect width="1000" height="300" fill="url(#bg)"/>
+    <rect width="1000" height="300" fill="url(#grid)"/>
+
+    <!-- Nodes/Graph representing Indexing -->
+    <g opacity="0.6">
+        <!-- Lines connecting nodes -->
+        <path d="M 750 100 L 850 60 L 920 150 L 820 220 L 700 180 Z" fill="none" stroke="#00B4D8" stroke-width="1.5" stroke-opacity="0.5"/>
+        <path d="M 750 100 L 920 150" fill="none" stroke="#00B4D8" stroke-width="1.5" stroke-opacity="0.5"/>
+        <path d="M 850 60 L 820 220" fill="none" stroke="#00B4D8" stroke-width="1.5" stroke-opacity="0.5"/>
+        
+        <!-- Glowing Nodes -->
+        <circle cx="750" cy="100" r="6" fill="#00B4D8" filter="url(#glow)"/>
+        <circle cx="850" cy="60" r="5" fill="#48CAE4" filter="url(#glow)"/>
+        <circle cx="920" cy="150" r="8" fill="#0077B6" filter="url(#glow)"/>
+        <circle cx="820" cy="220" r="6" fill="#00B4D8" filter="url(#glow)"/>
+        <circle cx="700" cy="180" r="5" fill="#48CAE4" filter="url(#glow)"/>
+        
+        <!-- Fake files -->
+        <rect x="735" y="80" width="16" height="20" rx="2" fill="#2d333b" stroke="#00B4D8" stroke-width="1"/>
+        <text x="743" y="93" fill="#00B4D8" font-family="monospace" font-size="6" text-anchor="middle">.md</text>
+        
+        <rect x="905" y="130" width="16" height="20" rx="2" fill="#2d333b" stroke="#0077B6" stroke-width="1"/>
+        <text x="913" y="143" fill="#0077B6" font-family="monospace" font-size="6" text-anchor="middle">pdf</text>
+        
+        <rect x="805" y="200" width="16" height="20" rx="2" fill="#2d333b" stroke="#48CAE4" stroke-width="1"/>
+        <text x="813" y="213" fill="#48CAE4" font-family="monospace" font-size="6" text-anchor="middle">.txt</text>
+    </g>
+
+    <!-- Content -->
+    <g transform="translate(80, 130)">
+        <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="bold" fill="white" letter-spacing="-1">Mark<tspan fill="url(#textGrad)">Index</tspan></text>
+        
+        <rect x="250" y="-35" width="60" height="30" rx="15" fill="#1e2532" stroke="#3d4a5d" stroke-width="1"/>
+        <text x="280" y="-14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#a0b3c6" text-anchor="middle">MCP</text>
+        
+        <text x="0" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" font-weight="400" fill="#8b949e">Enterprise Document Intelligence Server</text>
+        
+        <text x="0" y="85" font-family="monospace" font-size="14" font-weight="400" fill="#58a6ff">&gt; local-first TF-IDF • hierarchical parsed trees • stable section IDs</text>
+    </g>
+</svg>
