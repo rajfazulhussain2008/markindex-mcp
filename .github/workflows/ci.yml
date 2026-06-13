@@ -36,4 +36,4 @@ jobs:
       run: python -m compileall markindex/
 
     - name: Run Tests
-      run: pytest tests/ -v --cov=markindex --cov-report=term-missing --cov-fail-under=80
+      run: pytest tests/ -v --cov=markindex --cov-report=term-missing --cov-fail-under=85

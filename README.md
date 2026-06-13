@@ -307,6 +307,15 @@ If you are upgrading from `1.x` to `2.x`, ensure you have installed the exact `2
 
 ---
 
+## 📚 Documentation
+
+- [Tool Reference](docs/tool-reference.md)
+- [Error Codes](docs/error-codes.md)
+- [Claude Desktop Setup](docs/claude-desktop.md)
+- [Architecture](docs/architecture.md)
+
+---
+
 ## 🧪 Testing & Development
 
 See our [Contributing Guide](CONTRIBUTING.md) to get started!

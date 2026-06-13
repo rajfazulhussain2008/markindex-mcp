@@ -225,6 +225,78 @@ class TestIngestionTools(unittest.TestCase):
                 self.assertTrue(res["success"])
                 self.assertEqual(len(res["data"]["ingested"]), 2)
 
+    def test_ingest_directory_external_denied(self):
+        from markindex.tools.ingest import ingest_directory
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            res = ingest_directory(temp_dir)
+            self.assertFalse(res["success"])
+            self.assertEqual(res["code"], "ACCESS_DENIED")
+
+    @patch("markindex.tools.ingest.ingest_document")
+    def test_ingest_directory_partial_failure(self, mock_ingest):
+        from markindex.tools.ingest import ingest_directory
+
+        # return one success, one failure
+        mock_ingest.side_effect = [
+            {"success": True, "data": {"document_id": "1", "filename": "1.md", "size_chars": 10}},
+            {"success": False, "error": "Failed to parse", "code": "INGESTION_ERROR"},
+        ]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch("markindex.tools.ingest.settings.RAW_DIR", temp_dir):
+                with open(os.path.join(temp_dir, "1.md"), "w") as f:
+                    f.write("1")
+                with open(os.path.join(temp_dir, "2.md"), "w") as f:
+                    f.write("2")
+                res = ingest_directory(temp_dir)
+                self.assertTrue(res["success"])
+                self.assertEqual(len(res["data"]["ingested"]), 1)
+                self.assertEqual(len(res["data"]["failed"]), 1)
+
+    @patch("youtube_transcript_api.YouTubeTranscriptApi.get_transcript")
+    def test_ingest_youtube_valid(self, mock_get):
+        from markindex.tools.ingest import ingest_youtube
+        mock_get.return_value = [{"text": "Hello", "start": 0.0, "duration": 1.0}]
+        res = ingest_youtube("dQw4w9WgXcQ")
+        self.assertTrue(res["success"])
+        self.assertIn("document_id", res["data"])
+
+    def test_ingest_youtube_invalid_id(self):
+        from markindex.tools.ingest import ingest_youtube
+        res = ingest_youtube("invalid id space")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "INVALID_YOUTUBE_ID")
+
+    @patch("youtube_transcript_api.YouTubeTranscriptApi.get_transcript")
+    def test_ingest_youtube_error(self, mock_get):
+        from markindex.tools.ingest import ingest_youtube
+        mock_get.side_effect = Exception("API failure")
+        res = ingest_youtube("dQw4w9WgXcQ")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "YOUTUBE_ERROR")
+
+    @patch("markindex.tools.ingest.urllib.request.urlopen")
+    def test_download_url_stream_size_limit(self, mock_urlopen):
+        from markindex.tools.ingest import _download_url
+
+        mock_response = MagicMock()
+        def mock_get(key, default=None):
+            if key == "Content-Length":
+                return None
+            return "text/html"
+        mock_response.headers.get.side_effect = mock_get
+
+        # generate huge data
+        def read_chunk(*args):
+            return b"x" * (1024 * 1024 * 10)  # 10MB chunks
+
+        mock_response.read.side_effect = read_chunk
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        with patch("markindex.tools.ingest.settings.MAX_FILE_MB", 1):
+            with self.assertRaisesRegex(ValueError, "Download exceeded"):
+                _download_url("http://example.com/huge")
+
     def test_get_adjacent_sections(self):
         from markindex.tools.navigate import get_adjacent_sections
 
@@ -276,6 +348,54 @@ class TestIngestionTools(unittest.TestCase):
         res = delete_document(doc_id)
         self.assertTrue(res["success"])
         self.assertNotIn(doc_id, documents)
+
+    def test_delete_document_error(self):
+        from markindex.tools.manage import delete_document
+        res = delete_document("not-a-doc")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "DOC_NOT_FOUND")
+
+    def test_save_to_outputs_path_traversal(self):
+        from markindex.tools.manage import save_to_outputs
+        res = save_to_outputs("../outside.md", "content")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "PATH_TRAVERSAL")
+
+    def test_get_server_status(self):
+        from markindex.tools.manage import get_server_status
+
+        res = get_server_status()
+        self.assertTrue(res["success"])
+        self.assertIn("version", res["data"])
+        self.assertIn("documents_indexed", res["data"])
+        self.assertIn("status", res["data"])
+
+    def test_get_adjacent_sections_errors(self):
+        from markindex.tools.navigate import get_adjacent_sections
+
+        res = get_adjacent_sections("not-a-doc", "Sec")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "DOC_NOT_FOUND")
+
+        res_ingest = ingest_text("NavErr", "# Sec1")
+        doc_id = res_ingest["data"]["document_id"]
+        res = get_adjacent_sections(doc_id, "Missing")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "SECTION_NOT_FOUND")
+
+    def test_summarize_section_errors(self):
+        from markindex.tools.navigate import summarize_section
+
+        res = summarize_section("not-a-doc", "Sec")
+        self.assertFalse(res["success"])
+        self.assertEqual(res["code"], "DOC_NOT_FOUND")
+
+        res_ingest = ingest_text("SumErr", "# Sec1\n\n# EmptyParent\n## Child")
+        doc_id = res_ingest["data"]["document_id"]
+
+        res_missing = summarize_section(doc_id, "Missing")
+        self.assertFalse(res_missing["success"])
+        self.assertEqual(res_missing["code"], "SECTION_NOT_FOUND")
 
 
 if __name__ == "__main__":

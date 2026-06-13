@@ -243,5 +243,29 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(md, content)
 
 
+class TestExceptions(unittest.TestCase):
+    def test_document_not_found_error(self):
+        from markindex.exceptions import DocumentNotFoundError
+
+        err = DocumentNotFoundError("doc-123")
+        self.assertEqual(err.doc_id, "doc-123")
+        self.assertIn("doc-123", str(err))
+
+    def test_section_not_found_error(self):
+        from markindex.exceptions import SectionNotFoundError
+
+        err = SectionNotFoundError("Sec A", suggestions=["Sec B", "Sec C"])
+        self.assertEqual(err.section_title, "Sec A")
+        self.assertEqual(err.suggestions, ["Sec B", "Sec C"])
+        self.assertIn("Sec A", str(err))
+        self.assertIn("Sec B", str(err))
+
+    def test_base_error(self):
+        from markindex.exceptions import MarkIndexError
+
+        err = MarkIndexError("Base error")
+        self.assertIn("Base error", str(err))
+
+
 if __name__ == "__main__":
     unittest.main()

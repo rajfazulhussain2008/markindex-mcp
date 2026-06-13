@@ -13,8 +13,10 @@ class ToolResponse(TypedDict):
 
 
 class SectionNode(TypedDict):
-    """Represents a parsed markdown section."""
+    """Represents a hierarchical node in the document tree."""
 
+    id: str
+    path: str
     level: int
     title: str
     content: str
